@@ -221,6 +221,33 @@
     bulat: function (v) { return Math.round((v || 0) / 1e4) * 1e4; },
 
     /**
+     * Bulatkan satu kolom angka ke 0,01 juta dengan metode sisa terbesar,
+     * sehingga jumlah nilai yang dibulatkan PERSIS sama dengan pembulatan
+     * jumlah aslinya.
+     *
+     * Ini yang menjaga Tabel 12 dan Tabel 13 bertotal sama. Keduanya
+     * mengelompokkan uang yang sama dengan cara berbeda — per jenis dana dan
+     * per jenis penggunaan — sehingga bila tiap sel dibulatkan sendiri-sendiri,
+     * sisa pembulatannya berbeda dan total kedua tabel bisa meleset satu sen.
+     */
+    bulatkanKolom: function (mentah) {
+      var UNIT = 1e4;                       // Rp 10.000 = 0,01 juta
+      var skala = (mentah || []).map(function (v) { return (v || 0) / UNIT; });
+      if (!skala.length) return [];
+
+      var bawah = skala.map(Math.floor);
+      var target = Math.round(skala.reduce(function (a, b) { return a + b; }, 0));
+      var sisa = target - bawah.reduce(function (a, b) { return a + b; }, 0);
+
+      var urut = skala.map(function (v, i) { return { i: i, pecahan: v - Math.floor(v) }; })
+        .sort(function (a, b) { return b.pecahan - a.pecahan || a.i - b.i; });
+
+      var hasil = bawah.slice();
+      for (var n = 0; n < sisa && urut.length; n++) hasil[urut[n % urut.length].i] += 1;
+      return hasil.map(function (u) { return u * UNIT; });
+    },
+
+    /**
      * Ambil tiga tahun jendela akreditasi (TS-2, TS-1, TS) dari master.
      * Diurutkan menaik. Bila label TS belum diatur, pakai tiga tahun terakhir.
      */
@@ -264,46 +291,55 @@
         nilai[a.j][a.t] = (nilai[a.j][a.t] || 0) + a.n;
       });
 
-      var kelompok = [];
+      // Lintasan pertama: kumpulkan seluruh baris dengan nilai mentah, lintas
+      // sumber dana, supaya pembulatan kolom dapat dilakukan sekali untuk semua.
+      var semuaBaris = [];
       (master.sumber_dana || []).forEach(function (s) {
-        var barisSumber = (master.jenis_dana || [])
+        (master.jenis_dana || [])
           .filter(function (j) { return j.sumber_kode === s.kode; })
-          .map(function (j) {
-            var per = tahunList.map(function (th) { return Hitung.bulat((nilai[j.id] || {})[th] || 0); });
-            return {
-              jenis_dana_id: j.id, nama: j.nama, per_tahun: per,
-              jumlah: per.reduce(function (x, y) { return x + y; }, 0),
-              rata: per.reduce(function (x, y) { return x + y; }, 0) / tahunList.length
-            };
-          })
-          .filter(function (b) { return b.jumlah > 0; });
+          .forEach(function (j) {
+            var mentah = tahunList.map(function (th) { return (nilai[j.id] || {})[th] || 0; });
+            if (mentah.reduce(function (x, y) { return x + y; }, 0) > 0) {
+              semuaBaris.push({ sumber: s.kode, jenis_dana_id: j.id, nama: j.nama, mentah: mentah });
+            }
+          });
 
-        // Jenis dana yang dipakai transaksi tetapi sudah dinonaktifkan di master
+        // Jenis dana yang dipakai transaksi tetapi sudah terhapus dari master
         // tetap ditampilkan agar angka borang tidak hilang diam-diam.
         Object.keys(nilai).forEach(function (id) {
           if (petaJD[id]) return;
-          var adaDiSumber = false;
-          agregat.forEach(function (a) { if (a.j === id && a.s === s.kode) adaDiSumber = true; });
+          var adaDiSumber = agregat.some(function (a) { return a.j === id && a.s === s.kode; });
           if (!adaDiSumber) return;
-          var per = tahunList.map(function (th) { return Hitung.bulat(nilai[id][th] || 0); });
-          var jml = per.reduce(function (x, y) { return x + y; }, 0);
-          if (jml > 0) {
-            barisSumber.push({
-              jenis_dana_id: id, nama: '(jenis dana terhapus: ' + id + ')',
-              per_tahun: per, jumlah: jml, rata: jml / tahunList.length, yatim: true
+          var mentah = tahunList.map(function (th) { return nilai[id][th] || 0; });
+          if (mentah.reduce(function (x, y) { return x + y; }, 0) > 0) {
+            semuaBaris.push({
+              sumber: s.kode, jenis_dana_id: id,
+              nama: '(jenis dana terhapus: ' + id + ')', mentah: mentah, yatim: true
             });
           }
         });
+      });
 
+      // Lintasan kedua: bulatkan tiap kolom tahun secara serentak.
+      var terbulat = tahunList.map(function (_, i) {
+        return Hitung.bulatkanKolom(semuaBaris.map(function (b) { return b.mentah[i]; }));
+      });
+      semuaBaris.forEach(function (b, n) {
+        b.per_tahun = tahunList.map(function (_, i) { return terbulat[i][n]; });
+        b.jumlah = b.per_tahun.reduce(function (x, y) { return x + y; }, 0);
+        b.rata = b.jumlah / tahunList.length;
+      });
+
+      var kelompok = (master.sumber_dana || []).map(function (s) {
+        var barisSumber = semuaBaris.filter(function (b) { return b.sumber === s.kode; });
         var sub = tahunList.map(function (_, i) {
           return barisSumber.reduce(function (x, b) { return x + b.per_tahun[i]; }, 0);
         });
-        kelompok.push({
+        var jml = sub.reduce(function (x, y) { return x + y; }, 0);
+        return {
           kode: s.kode, nama: s.nama, baris: barisSumber,
-          sub_per_tahun: sub,
-          sub_jumlah: sub.reduce(function (x, y) { return x + y; }, 0),
-          sub_rata: sub.reduce(function (x, y) { return x + y; }, 0) / tahunList.length
-        });
+          sub_per_tahun: sub, sub_jumlah: jml, sub_rata: jml / tahunList.length
+        };
       });
 
       var mhs = kelompok.filter(function (k) { return k.kode === 'MHS'; });
@@ -337,8 +373,17 @@
         nilai[a.g][a.t] = (nilai[a.g][a.t] || 0) + a.n;
       });
 
-      var baris = (master.jenis_penggunaan || []).map(function (p) {
-        var per = tahunList.map(function (th) { return Hitung.bulat((nilai[p.kode] || {})[th] || 0); });
+      var daftar = master.jenis_penggunaan || [];
+      // Dibulatkan per kolom tahun dengan metode sisa terbesar, sama seperti
+      // Tabel 12, sehingga total kedua tabel dijamin identik.
+      var terbulat = tahunList.map(function (_, i) {
+        return Hitung.bulatkanKolom(daftar.map(function (p) {
+          return tahunList.map(function (th) { return (nilai[p.kode] || {})[th] || 0; })[i];
+        }));
+      });
+
+      var baris = daftar.map(function (p, n) {
+        var per = tahunList.map(function (_, i) { return terbulat[i][n]; });
         var jml = per.reduce(function (x, y) { return x + y; }, 0);
         return {
           kode: p.kode, no: p.no, nama: p.nama, kelompok: p.kelompok,
