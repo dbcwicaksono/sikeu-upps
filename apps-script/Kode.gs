@@ -207,6 +207,21 @@ function domainKampus(email) {
 }
 
 /**
+ * Bolehkah pemilik email kampus mendaftar sendiri sebagai operator?
+ *
+ * Bila "tidak", hanya email yang sudah terdaftar di M_Pengguna yang mendapat
+ * peran — selebihnya berperan publik dan tidak dapat menulis apa pun. Dipakai
+ * bila jumlah pemilik email kampus terlalu besar untuk dipercaya begitu saja,
+ * misalnya karena domainnya juga dipakai mahasiswa.
+ *
+ * Bawaannya "ya" agar dosen tidak perlu didaftarkan satu per satu.
+ */
+function pendaftaranOtomatis() {
+  var p = cariBaris('M_Parameter', 'kunci', 'pendaftaran_otomatis');
+  return !p || String(p.nilai).trim().toLowerCase() !== 'tidak';
+}
+
+/**
  * Kenali pengguna dari token, tentukan perannya, dan daftarkan bila perlu.
  * Mengembalikan null bila token tidak sah.
  */
@@ -221,7 +236,7 @@ function kenaliPengguna(idToken, lihatSebagai) {
     if (!benar(baris.aktif)) throw new Error('Akun ' + g.email + ' dinonaktifkan. Hubungi Wakil Dekan.');
     peran = String(baris.peran).trim().toLowerCase();
     if (!TINGKAT.hasOwnProperty(peran)) peran = PERAN.PUBLIK;
-  } else if (domainKampus(g.email)) {
+  } else if (domainKampus(g.email) && pendaftaranOtomatis()) {
     // Siapa pun berakun kampus boleh mengajukan draft; namanya terkunci ke email.
     tambahBaris('M_Pengguna', {
       email: g.email, nama: g.nama, peran: PERAN.OPERATOR, aktif: true,

@@ -82,6 +82,7 @@ var SEED_PARAMETER = [
   ['jumlah_dosen',     '55',   'Jumlah dosen tetap. Penyebut skor 5.1.2.3 dan 5.1.2.4'],
   ['jumlah_mahasiswa', '1501', 'Jumlah mahasiswa aktif. Penyebut skor 5.1.2.1'],
   ['sumber_operator',  '*',    'Kode sumber dana yang boleh diinput operator, dipisah koma. Isi * untuk semua'],
+  ['pendaftaran_otomatis', 'ya', 'Isi "tidak" bila hanya email yang sudah didaftarkan di M_Pengguna yang boleh menginput. Bawaannya "ya": pemilik email kampus otomatis menjadi operator'],
   ['dashboard_publik', 'tidak', 'Isi "ya" bila dashboard boleh dilihat tanpa login']
 ];
 

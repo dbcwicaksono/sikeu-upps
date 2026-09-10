@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Panduan Pemakaian — SIKEU</title>
-<link rel="stylesheet" href="assets/style.css?v=20260910e">
+<link rel="stylesheet" href="assets/style.css?v=20260910f">
 <style>
   .panduan { display: grid; grid-template-columns: 230px 1fr; gap: 28px; align-items: start; }
   .daftar-isi { position: sticky; top: 78px; }
@@ -13,10 +13,33 @@
     color: var(--teks-lemah); font-size: 13px; border-left: 2px solid transparent;
   }
   .daftar-isi a:hover { background: var(--biru-muda); color: var(--biru); }
-  .daftar-isi .kelompok {
-    font-size: 11px; text-transform: uppercase; letter-spacing: .5px;
-    color: var(--teks-lemah); font-weight: 700; margin: 16px 0 6px 11px;
+  .daftar-isi a.kini {
+    background: var(--biru-muda); color: var(--biru);
+    font-weight: 600; border-left-color: var(--biru);
   }
+
+  /* Hanya kelompok yang sedang dibaca yang terbuka, supaya daftarnya tetap
+     ringkas dan posisi pembaca langsung terlihat. */
+  .ti-judul {
+    width: 100%; text-align: left; background: none; border: none; border-radius: 7px;
+    padding: 8px 11px; margin: 2px 0 0; cursor: pointer;
+    font-size: 11px; text-transform: uppercase; letter-spacing: .5px;
+    color: var(--teks-lemah); font-weight: 700;
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  }
+  .ti-judul:hover { background: #eef1f6; color: var(--teks); }
+  .ti-grup.buka > .ti-judul { color: var(--biru); }
+
+  .ti-panah {
+    width: 0; height: 0; flex: none;
+    border-left: 4.5px solid currentColor;
+    border-top: 3.5px solid transparent; border-bottom: 3.5px solid transparent;
+    transition: transform .18s ease;
+  }
+  .ti-grup.buka > .ti-judul .ti-panah { transform: rotate(90deg); }
+
+  .ti-isi { display: none; padding-bottom: 4px; }
+  .ti-grup.buka > .ti-isi { display: block; }
   .bab { scroll-margin-top: 80px; }
   .bab h2 { font-size: 19px; margin: 0 0 4px; letter-spacing: -.2px; }
   .bab > p:first-of-type { color: var(--teks-lemah); margin-top: 0; }
@@ -57,30 +80,46 @@
     dan untuk siapa pun yang kelak meneruskan pengelolaan sistem ini.</p>
 
   <div class="panduan">
-    <nav class="daftar-isi">
-      <div class="kelompok">Dasar</div>
-      <a href="#apa">Apa ini sebenarnya</a>
-      <a href="#masuk">Cara masuk</a>
-      <a href="#peran">Empat peran</a>
-      <a href="#alur">Perjalanan satu data</a>
+    <nav class="daftar-isi" id="daftar-isi">
+      <div class="ti-grup">
+        <button class="ti-judul" type="button">Dasar<span class="ti-panah"></span></button>
+        <div class="ti-isi">
+          <a href="#apa">Apa ini sebenarnya</a>
+          <a href="#masuk">Cara masuk</a>
+          <a href="#peran">Empat peran</a>
+          <a href="#alur">Perjalanan satu data</a>
+        </div>
+      </div>
 
-      <div class="kelompok">Sehari-hari</div>
-      <a href="#operator">Menginput transaksi</a>
-      <a href="#antrean">Antrean kirim</a>
-      <a href="#verifikator">Memverifikasi</a>
-      <a href="#borang">Membaca Tabel 12 &amp; 13</a>
+      <div class="ti-grup">
+        <button class="ti-judul" type="button">Sehari-hari<span class="ti-panah"></span></button>
+        <div class="ti-isi">
+          <a href="#operator">Menginput transaksi</a>
+          <a href="#antrean">Antrean kirim</a>
+          <a href="#verifikator">Memverifikasi</a>
+          <a href="#borang">Membaca Tabel 12 &amp; 13</a>
+        </div>
+      </div>
 
-      <div class="kelompok">Pengelolaan</div>
-      <a href="#jenisdana">Jenis dana &amp; penggabungan</a>
-      <a href="#tahun">Tahun dan label TS</a>
-      <a href="#parameter">Parameter skor</a>
-      <a href="#pengguna">Pengguna dan akses</a>
+      <div class="ti-grup">
+        <button class="ti-judul" type="button">Pengelolaan<span class="ti-panah"></span></button>
+        <div class="ti-isi">
+          <a href="#jenisdana">Jenis dana &amp; penggabungan</a>
+          <a href="#tahun">Tahun dan label TS</a>
+          <a href="#parameter">Parameter skor</a>
+          <a href="#pengguna">Pengguna dan akses</a>
+        </div>
+      </div>
 
-      <div class="kelompok">Untuk penerus</div>
-      <a href="#arsitektur">Bagaimana ini dirakit</a>
-      <a href="#jangan">Yang jangan diubah</a>
-      <a href="#pulih">Kalau ada yang rusak</a>
-      <a href="#masalah">Masalah yang sering muncul</a>
+      <div class="ti-grup">
+        <button class="ti-judul" type="button">Untuk penerus<span class="ti-panah"></span></button>
+        <div class="ti-isi">
+          <a href="#arsitektur">Bagaimana ini dirakit</a>
+          <a href="#jangan">Yang jangan diubah</a>
+          <a href="#pulih">Kalau ada yang rusak</a>
+          <a href="#masalah">Masalah yang sering muncul</a>
+        </div>
+      </div>
     </nav>
 
     <div>
@@ -612,8 +651,8 @@
   </div>
 </div>
 
-<script src="config.js?v=20260910e"></script>
-<script src="assets/app.js?v=20260910e"></script>
+<script src="config.js?v=20260910f"></script>
+<script src="assets/app.js?v=20260910f"></script>
 <script>
 (function () {
   'use strict';
@@ -624,6 +663,79 @@
     .then(function () { return Auth.masuk_p() ? Auth.muatProfil().catch(function () {}) : null; })
     .catch(function () {})
     .then(function () { S.UI.kepala('panduan'); });
+
+  // -------------------------------------------------------- daftar isi
+
+  var bab = Array.prototype.slice.call(document.querySelectorAll('.bab'));
+  var grup = Array.prototype.slice.call(document.querySelectorAll('.ti-grup'));
+  var tautan = {};
+  Array.prototype.forEach.call(document.querySelectorAll('.daftar-isi a'), function (a) {
+    tautan[a.getAttribute('href').slice(1)] = a;
+  });
+
+  var kini = '';
+
+  /** Sorot satu bab, dan buka hanya kelompok yang memuatnya. */
+  function sorot(id) {
+    if (!tautan[id]) return;
+    Object.keys(tautan).forEach(function (k) {
+      tautan[k].classList.toggle('kini', k === id);
+    });
+    var milik = tautan[id].parentNode.parentNode;   // .ti-isi -> .ti-grup
+    grup.forEach(function (g) { g.classList.toggle('buka', g === milik); });
+  }
+
+  /**
+   * Bab yang dianggap sedang dibaca adalah bab terakhir yang bagian atasnya
+   * sudah melewati garis di bawah kepala halaman.
+   */
+  function periksa() {
+    if (!bab.length) return;
+    var batas = 96, terpilih = bab[0].id;
+    for (var i = 0; i < bab.length; i++) {
+      if (bab[i].getBoundingClientRect().top <= batas) terpilih = bab[i].id;
+    }
+    // Di ujung bawah halaman, bab terakhir yang seharusnya tersorot meski
+    // bagian atasnya belum melewati garis.
+    if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 4) {
+      terpilih = bab[bab.length - 1].id;
+    }
+    if (terpilih !== kini) { kini = terpilih; sorot(kini); }
+  }
+
+  // Mengklik judul kelompok membukanya dan menutup yang lain.
+  grup.forEach(function (g) {
+    g.querySelector('.ti-judul').addEventListener('click', function () {
+      var sudahBuka = g.classList.contains('buka');
+      grup.forEach(function (x) { x.classList.remove('buka'); });
+      if (!sudahBuka) g.classList.add('buka');
+    });
+  });
+
+  // Sengaja TIDAK memakai requestAnimationFrame: rAF berhenti saat tab tidak
+  // terlihat, sehingga penanda peredamnya tersangkut menyala dan sorot tidak
+  // pernah diperbarui lagi setelah tab kembali dibuka.
+  var menunggu = false;
+  window.addEventListener('scroll', function () {
+    if (menunggu) return;
+    menunggu = true;
+    setTimeout(function () { menunggu = false; periksa(); }, 80);
+  }, { passive: true });
+  window.addEventListener('resize', periksa, { passive: true });
+
+  // Tautan langsung seperti panduan.html#operator harus langsung membuka
+  // kelompok yang tepat.
+  var awal = location.hash.slice(1);
+  if (awal && tautan[awal]) { kini = awal; sorot(awal); }
+  else { periksa(); }
+
+  // Browser memulihkan posisi gulir halaman SETELAH skrip ini berjalan, dan
+  // pemulihan itu tidak menerbitkan peristiwa scroll. Tanpa pemeriksaan ulang
+  // di bawah, membuka kembali halaman di tengah bacaan akan menyorot bab
+  // pertama, bukan bab yang sedang dibaca.
+  window.addEventListener('load', periksa);
+  setTimeout(periksa, 250);
+  setTimeout(periksa, 800);
 })();
 </script>
 </body>
