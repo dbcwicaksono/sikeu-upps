@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kelola Master — SIKEU</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<div class="wadah">
+  <h1 class="judul-halaman">Kelola Master Data</h1>
+  <p class="sub-halaman">Sumber dana Tabel 12 dan jenis penggunaan Tabel 13 bersifat tetap sesuai format borang.
+    Yang dapat Anda kelola adalah jenis dana, rinciannya, tahun, parameter penilaian, dan pengguna.</p>
+
+  <div id="pesan-utama"></div>
+
+  <div class="tab-bar" id="tab-bar">
+    <button data-tab="jenis" class="aktif">Jenis Dana</button>
+    <button data-tab="rincian">Rincian</button>
+    <button data-tab="tahun">Tahun</button>
+    <button data-tab="parameter">Parameter Penilaian</button>
+    <button data-tab="pengguna">Pengguna</button>
+    <button data-tab="tetap">Struktur Tetap</button>
+    <button data-tab="log">Riwayat Aktivitas</button>
+  </div>
+
+  <div id="isi-tab"><div class="memuat"><span class="pias"></span>Memuat…</div></div>
+</div>
+
+<script src="config.js"></script>
+<script src="assets/app.js"></script>
+<script>
+(function () {
+  'use strict';
+  var S = window.SIKEU, Fmt = S.Fmt;
+  var mp = null, tabAktif = 'jenis';
+
+  if (!S.Sesi.masuk_p()) {
+    location.href = 'input.html';
+    return;
+  }
+  S.UI.kepala('master');
+
+  if (!S.Sesi.adalahAdmin()) {
+    document.getElementById('isi-tab').innerHTML =
+      '<div class="kartu"><div class="kartu-isi"><div class="pesan pesan-galat">' +
+      'Halaman ini hanya untuk Wakil Dekan.</div></div></div>';
+    document.getElementById('tab-bar').hidden = true;
+    return;
+  }
+
+  Array.prototype.forEach.call(document.querySelectorAll('#tab-bar button'), function (b) {
+    b.addEventListener('click', function () {
+      Array.prototype.forEach.call(document.querySelectorAll('#tab-bar button'), function (x) {
+        x.classList.remove('aktif');
+      });
+      b.classList.add('aktif');
+      tabAktif = b.dataset.tab;
+      gambar();
+    });
+  });
+
+  muat();
+
+  async function muat() {
+    try {
+      mp = await S.API.panggil('masterPenuh', {});
+      gambar();
+    } catch (err) {
+      document.getElementById('isi-tab').innerHTML =
+        '<div class="kartu"><div class="kartu-isi"><div class="pesan pesan-galat">' +
+        Fmt.aman(err.message) + '</div></div></div>';
+    }
+  }
+
+  function kartu(judul, sub, alat, isi) {
+    return '<div class="kartu"><div class="kartu-kepala">' +
+      '<h2 class="kartu-judul">' + Fmt.aman(judul) +
+        (sub ? '<small>' + sub + '</small>' : '') + '</h2>' +
+      '<div class="kartu-alat">' + (alat || '') + '</div></div>' +
+      '<div class="kartu-isi rapat"><div class="bungkus-tabel">' + isi + '</div></div></div>';
+  }
+
+  function lencanaAktif(a) {
+    return a ? '<span class="lencana lencana-hijau">Aktif</span>'
+             : '<span class="lencana lencana-abu">Nonaktif</span>';
+  }
+
+  function gambar() {
+    if (!mp) return;
+    var f = {
+      jenis: gambarJenis, rincian: gambarRincian, tahun: gambarTahun,
+      parameter: gambarParameter, pengguna: gambarPengguna, tetap: gambarTetap, log: gambarLog
+    }[tabAktif];
+    f();
+  }
+
+  function namaSumber(kode) {
+    var s = mp.sumber_dana.filter(function (x) { return x.kode === kode; })[0];
+    return s ? s.nama : kode;
+  }
+  function namaJenis(id) {
+    var j = mp.jenis_dana.filter(function (x) { return x.id === id; })[0];
+    return j ? j.nama : id;
+  }
+
+  // ------------------------------------------------------------ jenis dana
+
+  function gambarJenis() {
+    var h = '<table class="data"><thead><tr><th>Sumber Dana</th><th>Jenis Dana</th>' +
+      '<th class="angka">Urutan</th><th class="angka">Dipakai</th><th>Status</th><th></th></tr></thead><tbody>';
+
+    mp.sumber_dana.forEach(function (s) {
+      var daftar = mp.jenis_dana.filter(function (j) { return j.sumber_kode === s.kode; });
+      if (!daftar.length) {
+        h += '<tr><td>' + Fmt.aman(s.nama) + '</td><td colspan="5" style="color:var(--teks-lemah)">' +
+          'Belum ada jenis dana.</td></tr>';
+      }
+      daftar.forEach(function (j, i) {
+        h += '<tr>' + (i === 0 ? '<td rowspan="' + daftar.length + '">' + Fmt.aman(s.nama) + '</td>' : '') +
+          '<td><b>' + Fmt.aman(j.nama) + '</b><br><small style="color:var(--teks-lemah)">' + j.id + '</small></td>' +
+          '<td class="angka">' + j.urutan + '</td>' +
+          '<td class="angka">' + j.dipakai + '</td>' +
+          '<td>' + lencanaAktif(j.aktif) + '</td>' +
+          '<td class="aksi">' +
+            '<button class="tombol-kecil jd-ubah" data-id="' + j.id + '">Ubah</button> ' +
+            '<button class="tombol-kecil tombol-bahaya jd-hapus" data-id="' + j.id + '">Hapus</button>' +
+          '</td></tr>';
+      });
+    });
+
+    document.getElementById('isi-tab').innerHTML = kartu(
+      'Jenis Dana',
+      'Inilah bagian Tabel 12 yang fleksibel. Tambahkan sebanyak yang Anda perlukan pada tiap sumber dana. ' +
+        'Jenis dana yang sudah dipakai transaksi tidak dapat dihapus — nonaktifkan saja agar hilang dari form ' +
+        'tanpa mengubah riwayat.',
+      '<button class="tombol-utama tombol-kecil" id="jd-tambah">+ Tambah jenis dana</button>',
+      h + '</tbody></table>');
+
+    document.getElementById('jd-tambah').addEventListener('click', function () { formJenis(null); });
+    ikat('.jd-ubah', function (id) {
+      formJenis(mp.jenis_dana.filter(function (x) { return x.id === id; })[0]);
+    });
+    ikat('.jd-hapus', function (id) {
+      var j = mp.jenis_dana.filter(function (x) { return x.id === id; })[0];
+      S.UI.konfirmasi('Hapus jenis dana', 'Hapus "' + j.nama + '" beserta seluruh rinciannya?', function () {
+        kirim('hapusJenisDana', { id: id });
+      }, 'Hapus');
+    });
+  }
+
+  function formJenis(j) {
+    var html = '<div id="fp"></div><div class="baris-form">' +
+      '<div class="bidang"><label for="j-sumber">Sumber dana *</label><select id="j-sumber">' +
+        mp.sumber_dana.map(function (s) {
+          return '<option value="' + s.kode + '"' + (j && j.sumber_kode === s.kode ? ' selected' : '') + '>' +
+            Fmt.aman(s.nama) + '</option>';
+        }).join('') + '</select>' +
+        '<div class="petunjuk">Empat sumber ini tetap sesuai borang.</div></div>' +
+      '<div class="bidang"><label for="j-nama">Nama jenis dana *</label>' +
+        '<input id="j-nama" value="' + Fmt.aman(j ? j.nama : '') + '" placeholder="mis. Hibah Kompetitif Nasional"></div>' +
+      '<div class="bidang"><label for="j-urutan">Urutan tampil</label>' +
+        '<input id="j-urutan" type="number" value="' + (j ? j.urutan : '') + '"></div>' +
+      '<div class="bidang"><label for="j-aktif">Status</label><select id="j-aktif">' +
+        '<option value="1"' + (!j || j.aktif ? ' selected' : '') + '>Aktif</option>' +
+        '<option value="0"' + (j && !j.aktif ? ' selected' : '') + '>Nonaktif</option></select></div>' +
+      '</div>';
+
+    S.UI.modal(j ? 'Ubah jenis dana' : 'Tambah jenis dana', html, [
+      { label: 'Batal', aksi: function (t) { t(); } },
+      {
+        label: 'Simpan', kelas: 'tombol-utama',
+        aksi: function (tutup) {
+          kirim('simpanJenisDana', {
+            id: j ? j.id : '',
+            sumber_kode: document.getElementById('j-sumber').value,
+            nama: document.getElementById('j-nama').value,
+            urutan: document.getElementById('j-urutan').value,
+            aktif: document.getElementById('j-aktif').value === '1'
+          }, tutup);
+        }
+      }
+    ]);
+  }
+
+  // --------------------------------------------------------------- rincian
+
+  function gambarRincian() {
+    var h = '<table class="data"><thead><tr><th>Jenis Dana</th><th>Rincian</th>' +
+      '<th class="angka">Urutan</th><th class="angka">Dipakai</th><th>Status</th><th></th></tr></thead><tbody>';
+
+    var adaIsi = false;
+    mp.jenis_dana.forEach(function (j) {
+      var daftar = mp.rincian.filter(function (r) { return r.jenis_dana_id === j.id; });
+      if (!daftar.length) return;
+      adaIsi = true;
+      daftar.forEach(function (r, i) {
+        h += '<tr>' + (i === 0
+          ? '<td rowspan="' + daftar.length + '">' + Fmt.aman(j.nama) +
+            '<br><small style="color:var(--teks-lemah)">' + Fmt.aman(namaSumber(j.sumber_kode)) + '</small></td>'
+          : '') +
+          '<td>' + Fmt.aman(r.nama) + '<br><small style="color:var(--teks-lemah)">' + r.id + '</small></td>' +
+          '<td class="angka">' + r.urutan + '</td>' +
+          '<td class="angka">' + r.dipakai + '</td>' +
+          '<td>' + lencanaAktif(r.aktif) + '</td>' +
+          '<td class="aksi">' +
+            '<button class="tombol-kecil rc-ubah" data-id="' + r.id + '">Ubah</button> ' +
+            '<button class="tombol-kecil tombol-bahaya rc-hapus" data-id="' + r.id + '">Hapus</button>' +
+          '</td></tr>';
+      });
+    });
+    if (!adaIsi) h += '<tr><td colspan="6" class="kosong">Belum ada rincian.</td></tr>';
+
+    document.getElementById('isi-tab').innerHTML = kartu(
+      'Rincian Jenis Dana',
+      'Lapis ketiga di bawah jenis dana, sifatnya opsional. Berguna untuk memecah angka gelondongan — ' +
+        'misalnya PNBP mahasiswa dipecah menjadi SPP dan SPI tiap prodi. ' +
+        '<b>Tidak mengubah Tabel 12 maupun Tabel 13</b>, hanya menambah kedalaman penelusuran.',
+      '<button class="tombol-utama tombol-kecil" id="rc-tambah">+ Tambah rincian</button>',
+      h + '</tbody></table>');
+
+    document.getElementById('rc-tambah').addEventListener('click', function () { formRincian(null); });
+    ikat('.rc-ubah', function (id) {
+      formRincian(mp.rincian.filter(function (x) { return x.id === id; })[0]);
+    });
+    ikat('.rc-hapus', function (id) {
+      var r = mp.rincian.filter(function (x) { return x.id === id; })[0];
+      S.UI.konfirmasi('Hapus rincian', 'Hapus "' + r.nama + '"?', function () {
+        kirim('hapusRincian', { id: id });
+      }, 'Hapus');
+    });
+  }
+
+  function formRincian(r) {
+    var html = '<div id="fp"></div><div class="baris-form">' +
+      '<div class="bidang bidang-lebar"><label for="r-jenis">Jenis dana *</label><select id="r-jenis">' +
+        mp.jenis_dana.map(function (j) {
+          return '<option value="' + j.id + '"' + (r && r.jenis_dana_id === j.id ? ' selected' : '') + '>' +
+            Fmt.aman(namaSumber(j.sumber_kode)) + ' → ' + Fmt.aman(j.nama) + '</option>';
+        }).join('') + '</select></div>' +
+      '<div class="bidang bidang-lebar"><label for="r-nama">Nama rincian *</label>' +
+        '<input id="r-nama" value="' + Fmt.aman(r ? r.nama : '') + '" placeholder="mis. SPP Prodi Kesmas"></div>' +
+      '<div class="bidang"><label for="r-urutan">Urutan tampil</label>' +
+        '<input id="r-urutan" type="number" value="' + (r ? r.urutan : '') + '"></div>' +
+      '<div class="bidang"><label for="r-aktif">Status</label><select id="r-aktif">' +
+        '<option value="1"' + (!r || r.aktif ? ' selected' : '') + '>Aktif</option>' +
+        '<option value="0"' + (r && !r.aktif ? ' selected' : '') + '>Nonaktif</option></select></div>' +
+      '</div>';
+
+    S.UI.modal(r ? 'Ubah rincian' : 'Tambah rincian', html, [
+      { label: 'Batal', aksi: function (t) { t(); } },
+      {
+        label: 'Simpan', kelas: 'tombol-utama',
+        aksi: function (tutup) {
+          kirim('simpanRincian', {
+            id: r ? r.id : '',
+            jenis_dana_id: document.getElementById('r-jenis').value,
+            nama: document.getElementById('r-nama').value,
+            urutan: document.getElementById('r-urutan').value,
+            aktif: document.getElementById('r-aktif').value === '1'
+          }, tutup);
+        }
+      }
+    ]);
+  }
+
+  // ----------------------------------------------------------------- tahun
+
+  function gambarTahun() {
+    var h = '<table class="data"><thead><tr><th>Tahun</th><th>Label akreditasi</th>' +
+      '<th class="angka">Transaksi</th><th>Status</th><th></th></tr></thead><tbody>';
+    mp.tahun.forEach(function (t) {
+      h += '<tr><td><b>' + t.tahun + '</b></td>' +
+        '<td>' + (t.label_ts ? '<span class="lencana lencana-biru">' + t.label_ts + '</span>' : '—') + '</td>' +
+        '<td class="angka">' + t.dipakai + '</td>' +
+        '<td>' + lencanaAktif(t.aktif) + '</td>' +
+        '<td class="aksi"><button class="tombol-kecil th-ubah" data-id="' + t.tahun + '">Ubah</button> ' +
+          '<button class="tombol-kecil tombol-bahaya th-hapus" data-id="' + t.tahun + '">Hapus</button></td></tr>';
+    });
+
+    document.getElementById('isi-tab').innerHTML = kartu(
+      'Tahun Anggaran',
+      'Label <b>TS</b> menandai tahun terkini, <b>TS-1</b> dan <b>TS-2</b> dua tahun sebelumnya. ' +
+        'Dashboard memakai ketiganya sebagai jendela akreditasi. Satu label hanya boleh dipakai satu tahun.',
+      '<button class="tombol-utama tombol-kecil" id="th-tambah">+ Tambah tahun</button>',
+      h + '</tbody></table>');
+
+    document.getElementById('th-tambah').addEventListener('click', function () { formTahun(null); });
+    ikat('.th-ubah', function (id) {
+      formTahun(mp.tahun.filter(function (x) { return String(x.tahun) === id; })[0]);
+    });
+    ikat('.th-hapus', function (id) {
+      S.UI.konfirmasi('Hapus tahun', 'Hapus tahun ' + id + ' dari master?', function () {
+        kirim('hapusTahun', { tahun: id });
+      }, 'Hapus');
+    });
+  }
+
+  function formTahun(t) {
+    var html = '<div id="fp"></div><div class="baris-form">' +
+      '<div class="bidang"><label for="t-tahun">Tahun *</label>' +
+        '<input id="t-tahun" type="number" value="' + (t ? t.tahun : new Date().getFullYear()) + '"' +
+        (t ? ' readonly' : '') + '></div>' +
+      '<div class="bidang"><label for="t-label">Label akreditasi</label><select id="t-label">' +
+        ['', 'TS', 'TS-1', 'TS-2', 'TS-3', 'TS-4'].map(function (l) {
+          return '<option value="' + l + '"' + (t && t.label_ts === l ? ' selected' : '') + '>' +
+            (l || '— tanpa label —') + '</option>';
+        }).join('') + '</select>' +
+        '<div class="petunjuk">Memberi label ke tahun lain akan melepas label itu dari tahun sebelumnya.</div></div>' +
+      '<div class="bidang"><label for="t-aktif">Status</label><select id="t-aktif">' +
+        '<option value="1"' + (!t || t.aktif ? ' selected' : '') + '>Aktif</option>' +
+        '<option value="0"' + (t && !t.aktif ? ' selected' : '') + '>Nonaktif</option></select></div>' +
+      '</div>';
+
+    S.UI.modal(t ? 'Ubah tahun ' + t.tahun : 'Tambah tahun', html, [
+      { label: 'Batal', aksi: function (x) { x(); } },
+      {
+        label: 'Simpan', kelas: 'tombol-utama',
+        aksi: function (tutup) {
+          kirim('simpanTahun', {
+            tahun: document.getElementById('t-tahun').value,
+            label_ts: document.getElementById('t-label').value,
+            aktif: document.getElementById('t-aktif').value === '1'
+          }, tutup);
+        }
+      }
+    ]);
+  }
+
+  // ------------------------------------------------------------- parameter
+
+  var KETERANGAN = {
+    nama_upps: 'Nama unit, tampil di dashboard dan cetakan',
+    jenis_pt: 'PTN atau PTS — menentukan rumus skor butir 5.1.1',
+    jumlah_dosen: 'Penyebut skor 5.1.2.3 (penelitian) dan 5.1.2.4 (PkM)',
+    jumlah_mahasiswa: 'Penyebut skor 5.1.2.1 (dana operasional per mahasiswa)',
+    sumber_dosen: 'Kode sumber dana yang boleh diinput dosen, dipisah koma',
+    tahun_ts: 'Tahun yang dianggap TS'
+  };
+
+  function gambarParameter() {
+    var h = '<div class="kartu-isi"><div class="baris-form">' +
+      mp.parameter.map(function (p) {
+        return '<div class="bidang"><label for="p-' + p.kunci + '">' + Fmt.aman(p.kunci) + '</label>' +
+          '<input id="p-' + p.kunci + '" value="' + Fmt.aman(p.nilai) + '">' +
+          '<div class="petunjuk">' + Fmt.aman(KETERANGAN[p.kunci] || p.keterangan || '') + '</div></div>';
+      }).join('') +
+      '</div><button class="tombol-utama" id="p-simpan">Simpan parameter</button></div>';
+
+    document.getElementById('isi-tab').innerHTML =
+      '<div class="kartu"><div class="kartu-kepala"><h2 class="kartu-judul">Parameter Penilaian' +
+      '<small>Angka-angka ini dipakai sebagai penyebut skor akreditasi di dashboard. ' +
+      'Perbarui setiap kali jumlah dosen atau mahasiswa berubah.</small></h2></div>' + h + '</div>';
+
+    document.getElementById('p-simpan').addEventListener('click', function () {
+      var isi = {};
+      mp.parameter.forEach(function (p) { isi[p.kunci] = document.getElementById('p-' + p.kunci).value; });
+      kirim('simpanParameter', { parameter: isi });
+    });
+  }
+
+  // -------------------------------------------------------------- pengguna
+
+  async function gambarPengguna() {
+    document.getElementById('isi-tab').innerHTML = '<div class="memuat"><span class="pias"></span>Memuat…</div>';
+    var daftar;
+    try { daftar = await S.API.panggil('listPengguna', {}); }
+    catch (err) { S.UI.galat(err.message); return; }
+
+    var h = '<table class="data"><thead><tr><th>Username</th><th>Nama</th><th>Email</th>' +
+      '<th>Peran</th><th>Status</th><th></th></tr></thead><tbody>';
+    daftar.forEach(function (u) {
+      h += '<tr><td><b>' + Fmt.aman(u.username) + '</b></td>' +
+        '<td>' + Fmt.aman(u.nama) + '</td>' +
+        '<td>' + Fmt.aman(u.email || '—') + '</td>' +
+        '<td>' + (u.peran === 'admin'
+          ? '<span class="lencana lencana-biru">Wakil Dekan</span>'
+          : '<span class="lencana lencana-abu">Dosen</span>') + '</td>' +
+        '<td>' + lencanaAktif(u.aktif) + '</td>' +
+        '<td class="aksi"><button class="tombol-kecil pg-ubah" data-id="' + u.id + '">Ubah</button> ' +
+          '<button class="tombol-kecil tombol-bahaya pg-hapus" data-id="' + u.id + '">Hapus</button></td></tr>';
+    });
+
+    document.getElementById('isi-tab').innerHTML = kartu(
+      'Pengguna',
+      '<b>Wakil Dekan</b> memiliki akses penuh: CRUD seluruh data, verifikasi, dan kelola master. ' +
+        '<b>Dosen</b> hanya dapat menginput dana dari sumber eksternal, dan hanya dapat mengubah atau ' +
+        'menghapus entrinya sendiri selama belum diverifikasi.',
+      '<button class="tombol-utama tombol-kecil" id="pg-tambah">+ Tambah pengguna</button>',
+      h + '</tbody></table>');
+
+    document.getElementById('pg-tambah').addEventListener('click', function () { formPengguna(null); });
+    ikat('.pg-ubah', function (id) {
+      formPengguna(daftar.filter(function (x) { return x.id === id; })[0]);
+    });
+    ikat('.pg-hapus', function (id) {
+      var u = daftar.filter(function (x) { return x.id === id; })[0];
+      S.UI.konfirmasi('Hapus pengguna', 'Hapus akun "' + u.username + '"?', function () {
+        kirim('hapusPengguna', { id: id });
+      }, 'Hapus');
+    });
+  }
+
+  function formPengguna(u) {
+    var html = '<div id="fp"></div><div class="baris-form">' +
+      '<div class="bidang"><label for="u-username">Username *</label>' +
+        '<input id="u-username" value="' + Fmt.aman(u ? u.username : '') + '"' + (u ? ' readonly' : '') + '>' +
+        '<div class="petunjuk">Huruf kecil, angka, titik, garis bawah, strip. 3–30 karakter.</div></div>' +
+      '<div class="bidang"><label for="u-nama">Nama lengkap *</label>' +
+        '<input id="u-nama" value="' + Fmt.aman(u ? u.nama : '') + '"></div>' +
+      '<div class="bidang"><label for="u-email">Email</label>' +
+        '<input id="u-email" type="email" value="' + Fmt.aman(u ? u.email : '') + '"></div>' +
+      '<div class="bidang"><label for="u-peran">Peran *</label><select id="u-peran">' +
+        '<option value="dosen"' + (u && u.peran === 'dosen' ? ' selected' : '') + '>Dosen</option>' +
+        '<option value="admin"' + (u && u.peran === 'admin' ? ' selected' : '') + '>Wakil Dekan (akses penuh)</option>' +
+        '</select></div>' +
+      '<div class="bidang"><label for="u-sandi">Kata sandi' + (u ? '' : ' *') + '</label>' +
+        '<input id="u-sandi" type="text" autocomplete="off" placeholder="' +
+        (u ? 'kosongkan bila tidak diubah' : 'minimal 8 karakter') + '">' +
+        '<div class="petunjuk">Sandi ditampilkan terbuka agar mudah Anda salin dan sampaikan. ' +
+        'Minta yang bersangkutan segera menggantinya.</div></div>' +
+      '<div class="bidang"><label for="u-aktif">Status</label><select id="u-aktif">' +
+        '<option value="1"' + (!u || u.aktif ? ' selected' : '') + '>Aktif</option>' +
+        '<option value="0"' + (u && !u.aktif ? ' selected' : '') + '>Nonaktif</option></select></div>' +
+      '</div>' +
+      (u ? '' : '<button class="tombol-kecil" id="u-acak" type="button">Buatkan sandi acak</button>');
+
+    var m = S.UI.modal(u ? 'Ubah pengguna' : 'Tambah pengguna', html, [
+      { label: 'Batal', aksi: function (t) { t(); } },
+      {
+        label: 'Simpan', kelas: 'tombol-utama',
+        aksi: function (tutup) {
+          kirim('simpanPengguna', {
+            id: u ? u.id : '',
+            username: document.getElementById('u-username').value,
+            nama: document.getElementById('u-nama').value,
+            email: document.getElementById('u-email').value,
+            peran: document.getElementById('u-peran').value,
+            sandi: document.getElementById('u-sandi').value,
+            aktif: document.getElementById('u-aktif').value === '1'
+          }, tutup);
+        }
+      }
+    ]);
+
+    var acak = document.getElementById('u-acak');
+    if (acak) {
+      acak.addEventListener('click', function () {
+        var abjad = 'abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+        var s = '';
+        var buf = new Uint32Array(12);
+        crypto.getRandomValues(buf);
+        for (var i = 0; i < 12; i++) s += abjad.charAt(buf[i] % abjad.length);
+        document.getElementById('u-sandi').value = s;
+      });
+    }
+  }
+
+  // ------------------------------------------------------- struktur tetap
+
+  function gambarTetap() {
+    var h1 = '<table class="data"><thead><tr><th>Kode</th><th>Sumber Dana (Tabel 12)</th></tr></thead><tbody>' +
+      mp.sumber_dana.map(function (s) {
+        return '<tr><td><code>' + s.kode + '</code></td><td>' + Fmt.aman(s.nama) + '</td></tr>';
+      }).join('') + '</tbody></table>';
+
+    var h2 = '<table class="data"><thead><tr><th>No</th><th>Jenis Penggunaan (Tabel 13)</th>' +
+      '<th>Kelompok sub-total</th></tr></thead><tbody>' +
+      mp.jenis_penggunaan.map(function (p) {
+        return '<tr><td>' + p.no + '</td><td>' + Fmt.aman(p.nama) + '</td>' +
+          '<td>' + (p.kelompok === 'operasional'
+            ? '<span class="lencana lencana-biru">Sub-total 1 · operasional</span>'
+            : '<span class="lencana lencana-jingga">Sub-total 2 · investasi</span>') + '</td></tr>';
+      }).join('') + '</tbody></table>';
+
+    document.getElementById('isi-tab').innerHTML =
+      '<div class="pesan pesan-info">Dua daftar ini <b>tidak dapat diubah dari aplikasi</b> karena bentuknya ' +
+      'ditentukan format borang akreditasi. Menambah atau mengurangi barisnya akan membuat Tabel 12 dan ' +
+      'Tabel 13 tidak lagi sesuai borang.</div>' +
+      kartu('Sumber Dana — tetap', 'Empat sumber dana pada Tabel 12.', '', h1) +
+      kartu('Jenis Penggunaan — tetap', 'Tujuh jenis penggunaan pada Tabel 13, terbagi dua kelompok sub-total.', '', h2);
+  }
+
+  // -------------------------------------------------------------------- log
+
+  async function gambarLog() {
+    document.getElementById('isi-tab').innerHTML = '<div class="memuat"><span class="pias"></span>Memuat…</div>';
+    var r;
+    try { r = await S.API.panggil('listLog', { perHalaman: 200 }); }
+    catch (err) { S.UI.galat(err.message); return; }
+
+    var h = '<table class="data"><thead><tr><th>Waktu</th><th>Pengguna</th><th>Aksi</th>' +
+      '<th>Entitas</th><th>Referensi</th><th>Detail</th></tr></thead><tbody>';
+    r.baris.forEach(function (l) {
+      h += '<tr><td><small>' + Fmt.aman(String(l.waktu).replace('T', ' ')) + '</small></td>' +
+        '<td>' + Fmt.aman(l.username) + '</td>' +
+        '<td><span class="lencana lencana-abu">' + Fmt.aman(l.aksi) + '</span></td>' +
+        '<td>' + Fmt.aman(l.entitas) + '</td>' +
+        '<td><small>' + Fmt.aman(l.ref_id) + '</small></td>' +
+        '<td style="max-width:320px"><small>' + Fmt.aman(l.detail) + '</small></td></tr>';
+    });
+    if (!r.baris.length) h += '<tr><td colspan="6" class="kosong">Belum ada aktivitas tercatat.</td></tr>';
+
+    document.getElementById('isi-tab').innerHTML = kartu(
+      'Riwayat Aktivitas',
+      'Menampilkan ' + r.baris.length + ' aktivitas terakhir dari total ' + r.total +
+        '. Berguna sebagai jejak audit saat asesmen lapangan.',
+      '', h + '</tbody></table>');
+  }
+
+  // ------------------------------------------------------------- pembantu
+
+  function ikat(pemilih, fn) {
+    Array.prototype.forEach.call(document.querySelectorAll(pemilih), function (b) {
+      b.addEventListener('click', function () { fn(b.dataset.id); });
+    });
+  }
+
+  async function kirim(aksi, data, tutup) {
+    try {
+      var r = await S.API.panggil(aksi, data);
+      if (tutup) tutup();
+      S.UI.sukses(r.pesan || 'Tersimpan.');
+      await muat();
+    } catch (err) {
+      var kotak = document.getElementById('fp');
+      if (kotak) kotak.innerHTML = '<div class="pesan pesan-galat">' + Fmt.aman(err.message) + '</div>';
+      else S.UI.galat(err.message);
+    }
+  }
+})();
+</script>
+</body>
+</html>

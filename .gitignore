@@ -1,0 +1,12 @@
+# Data keuangan asli — sengaja TIDAK diunggah.
+# Repo ini publik (syarat GitHub Pages di akun gratis), sedangkan berkas di
+# bawah berisi catatan keuangan sesungguhnya: judul penelitian beserta
+# nominalnya, gaji dosen dan tendik, serta dana kerjasama per mitra.
+# Berkasnya tetap ada di komputer Anda untuk diimpor ke Google Sheet.
+data/transaksi.csv
+tools/acuan.json
+
+node_modules/
+*.log
+.DS_Store
+Thumbs.db

@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Input Data Keuangan — SIKEU</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<div class="wadah">
+
+  <!-- ------------------------------------------------------------- masuk -->
+  <div id="layar-masuk" hidden>
+    <div class="masuk-bungkus">
+      <div class="kartu">
+        <div class="kartu-kepala"><h2 class="kartu-judul">Masuk</h2></div>
+        <div class="kartu-isi">
+          <div id="masuk-pesan"></div>
+          <form id="form-masuk">
+            <div class="bidang" style="margin-bottom:14px">
+              <label for="m-username">Username</label>
+              <input id="m-username" autocomplete="username" required>
+            </div>
+            <div class="bidang" style="margin-bottom:18px">
+              <label for="m-sandi">Kata sandi</label>
+              <input id="m-sandi" type="password" autocomplete="current-password" required>
+            </div>
+            <button class="tombol-utama" style="width:100%;justify-content:center" type="submit" id="tbl-masuk">Masuk</button>
+          </form>
+          <p class="catatan-kaki">Belum punya akun? Hubungi Wakil Dekan untuk dibuatkan.
+            <br>Dashboard dapat dilihat tanpa masuk lewat menu di atas.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ------------------------------------------------------------- kerja -->
+  <div id="layar-kerja" hidden>
+    <h1 class="judul-halaman">Input Data Keuangan</h1>
+    <p class="sub-halaman" id="sub-judul"></p>
+
+    <div id="peringatan"></div>
+
+    <div class="kartu">
+      <div class="kartu-kepala">
+        <h2 class="kartu-judul">Daftar Transaksi <small id="ringkas-daftar"></small></h2>
+        <div class="kartu-alat">
+          <button id="tbl-sandi" class="tombol-kecil">Ganti kata sandi</button>
+          <button id="tbl-csv" class="tombol-kecil">Unduh CSV</button>
+          <button id="tbl-tambah" class="tombol-utama">+ Tambah transaksi</button>
+        </div>
+      </div>
+
+      <div class="kartu-isi">
+        <div class="saring">
+          <div class="bidang"><label for="f-cari">Cari uraian</label><input id="f-cari" placeholder="kata kunci…"></div>
+          <div class="bidang"><label for="f-tahun">Tahun</label><select id="f-tahun"></select></div>
+          <div class="bidang"><label for="f-sumber">Sumber dana</label><select id="f-sumber"></select></div>
+          <div class="bidang"><label for="f-penggunaan">Jenis penggunaan</label><select id="f-penggunaan"></select></div>
+          <div class="bidang"><label for="f-status">Status</label><select id="f-status">
+            <option value="">Semua status</option>
+            <option value="Menunggu Verifikasi">Menunggu Verifikasi</option>
+            <option value="Terverifikasi">Terverifikasi</option>
+          </select></div>
+          <div class="bidang" id="bidang-lingkup" hidden><label for="f-lingkup">Lingkup</label><select id="f-lingkup">
+            <option value="">Hanya data saya</option>
+            <option value="1">Semua data</option>
+          </select></div>
+          <div class="bidang" style="flex:0 0 auto"><button id="tbl-saring" class="tombol-utama">Terapkan</button></div>
+          <div class="bidang" style="flex:0 0 auto"><button id="tbl-reset">Reset</button></div>
+        </div>
+      </div>
+
+      <div id="alat-massal" class="kartu-isi" style="border-top:1px solid var(--garis);background:#f7f9fc" hidden>
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+          <b id="massal-jumlah"></b>
+          <button id="tbl-verif" class="tombol-utama tombol-kecil">Verifikasi terpilih</button>
+          <button id="tbl-batal-verif" class="tombol-kecil">Batalkan verifikasi</button>
+          <button id="tbl-selesai-tinjau" class="tombol-kecil">Tandai selesai ditinjau</button>
+        </div>
+      </div>
+
+      <div class="kartu-isi rapat">
+        <div class="bungkus-tabel" id="wadah-tabel"><div class="memuat"><span class="pias"></span>Memuat…</div></div>
+      </div>
+
+      <div class="halaman-nav">
+        <span id="info-halaman"></span>
+        <button id="tbl-sebelum" class="tombol-kecil">Sebelumnya</button>
+        <button id="tbl-sesudah" class="tombol-kecil">Berikutnya</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="config.js"></script>
+<script src="assets/app.js"></script>
+<script>
+(function () {
+  'use strict';
+  var S = window.SIKEU, Fmt = S.Fmt;
+  var master = null, halaman = 1, hasil = null, terpilih = {};
+
+  var param = new URLSearchParams(location.search);
+
+  // ------------------------------------------------------------ awal mula
+
+  if (S.Sesi.masuk_p()) mulaiKerja(); else tampilkanMasuk();
+
+  function tampilkanMasuk() {
+    S.UI.kepala('input');
+    document.getElementById('layar-masuk').hidden = false;
+    document.getElementById('form-masuk').addEventListener('submit', async function (e) {
+      e.preventDefault();
+      var tbl = document.getElementById('tbl-masuk');
+      tbl.disabled = true;
+      tbl.textContent = 'Memeriksa…';
+      document.getElementById('masuk-pesan').innerHTML = '';
+      try {
+        var r = await S.API.panggil('login', {
+          username: document.getElementById('m-username').value.trim(),
+          sandi: document.getElementById('m-sandi').value
+        });
+        S.Sesi.masuk(r.token, r.pengguna);
+        location.reload();
+      } catch (err) {
+        document.getElementById('masuk-pesan').innerHTML =
+          '<div class="pesan pesan-galat">' + Fmt.aman(err.message) + '</div>';
+        tbl.disabled = false;
+        tbl.textContent = 'Masuk';
+      }
+    });
+  }
+
+  async function mulaiKerja() {
+    S.UI.kepala('input');
+    document.getElementById('layar-kerja').hidden = false;
+    var u = S.Sesi.pengguna();
+
+    if (u.peran === 'admin') {
+      document.getElementById('alat-massal').hidden = false;
+    } else {
+      document.getElementById('bidang-lingkup').hidden = false;
+    }
+
+    try {
+      master = await S.API.panggil('master', {});
+    } catch (err) {
+      document.getElementById('peringatan').innerHTML =
+        '<div class="pesan pesan-galat">' + Fmt.aman(err.message) + '</div>';
+      return;
+    }
+
+    isiSaringan();
+    if (param.get('tinjau')) {
+      document.getElementById('peringatan').innerHTML =
+        '<div class="pesan pesan-ingat">Menampilkan hanya transaksi yang <b>perlu ditinjau manual</b>. ' +
+        'Ini adalah data migrasi bertanda “Investasi Sarpras” yang sementara masuk ke <i>Investasi sarana</i>. ' +
+        'Ubah menjadi <i>Investasi prasarana</i> bila memang prasarana, lalu tandai selesai ditinjau. ' +
+        '<a href="input.html">Tampilkan semua</a></div>';
+    }
+
+    document.getElementById('sub-judul').textContent = u.peran === 'admin'
+      ? 'Anda masuk sebagai Wakil Dekan — akses penuh atas seluruh data dan verifikasi.'
+      : 'Anda masuk sebagai dosen — dapat menginput dana dari sumber eksternal dan mengubahnya selama belum diverifikasi.';
+
+    pasangKejadian();
+    await muatDaftar();
+  }
+
+  // ------------------------------------------------------------- saringan
+
+  function opsi(daftar, kosong) {
+    return '<option value="">' + kosong + '</option>' + daftar.map(function (d) {
+      return '<option value="' + Fmt.aman(d.nilai) + '">' + Fmt.aman(d.label) + '</option>';
+    }).join('');
+  }
+
+  function sumberBoleh() {
+    var u = S.Sesi.pengguna();
+    if (u.peran === 'admin') return master.sumber_dana;
+    var boleh = String(master.parameter.sumber_dosen || 'PEM,LAIN').split(',').map(function (s) { return s.trim(); });
+    return master.sumber_dana.filter(function (s) { return boleh.indexOf(s.kode) >= 0; });
+  }
+
+  function isiSaringan() {
+    document.getElementById('f-tahun').innerHTML = opsi(
+      master.tahun.slice().reverse().map(function (t) {
+        return { nilai: t.tahun, label: t.label_ts ? t.tahun + ' (' + t.label_ts + ')' : String(t.tahun) };
+      }), 'Semua tahun');
+
+    document.getElementById('f-sumber').innerHTML = opsi(
+      master.sumber_dana.map(function (s) { return { nilai: s.kode, label: s.nama }; }), 'Semua sumber');
+
+    document.getElementById('f-penggunaan').innerHTML = opsi(
+      master.jenis_penggunaan.map(function (p) { return { nilai: p.kode, label: p.no + '. ' + p.nama }; }),
+      'Semua penggunaan');
+  }
+
+  function saringSekarang() {
+    var f = {
+      cari: document.getElementById('f-cari').value.trim(),
+      tahun: document.getElementById('f-tahun').value,
+      sumber: document.getElementById('f-sumber').value,
+      penggunaan: document.getElementById('f-penggunaan').value,
+      status: document.getElementById('f-status').value
+    };
+    if (param.get('tinjau')) f.perlu_tinjau = true;
+    if (S.Sesi.pengguna().peran !== 'admin') {
+      f.semua = document.getElementById('f-lingkup').value ? true : false;
+    }
+    return f;
+  }
+
+  // -------------------------------------------------------------- kejadian
+
+  function pasangKejadian() {
+    document.getElementById('tbl-saring').addEventListener('click', function () { halaman = 1; muatDaftar(); });
+    document.getElementById('f-cari').addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') { halaman = 1; muatDaftar(); }
+    });
+    document.getElementById('tbl-reset').addEventListener('click', function () {
+      ['f-cari', 'f-tahun', 'f-sumber', 'f-penggunaan', 'f-status'].forEach(function (id) {
+        document.getElementById(id).value = '';
+      });
+      halaman = 1;
+      muatDaftar();
+    });
+    document.getElementById('tbl-sebelum').addEventListener('click', function () {
+      if (halaman > 1) { halaman--; muatDaftar(); }
+    });
+    document.getElementById('tbl-sesudah').addEventListener('click', function () {
+      if (hasil && halaman * hasil.per_halaman < hasil.total) { halaman++; muatDaftar(); }
+    });
+    document.getElementById('tbl-tambah').addEventListener('click', function () { formTransaksi(null); });
+    document.getElementById('tbl-sandi').addEventListener('click', formSandi);
+    document.getElementById('tbl-csv').addEventListener('click', unduhCsv);
+
+    var vb = document.getElementById('tbl-verif');
+    if (vb) {
+      vb.addEventListener('click', function () { ubahVerifikasi('Terverifikasi', false); });
+      document.getElementById('tbl-batal-verif').addEventListener('click', function () {
+        ubahVerifikasi('Menunggu Verifikasi', false);
+      });
+      document.getElementById('tbl-selesai-tinjau').addEventListener('click', function () {
+        ubahVerifikasi('Terverifikasi', true);
+      });
+    }
+  }
+
+  // ---------------------------------------------------------------- daftar
+
+  async function muatDaftar() {
+    document.getElementById('wadah-tabel').innerHTML = '<div class="memuat"><span class="pias"></span>Memuat…</div>';
+    terpilih = {};
+    perbaruiMassal();
+    try {
+      hasil = await S.API.panggil('listTransaksi', {
+        filter: saringSekarang(), halaman: halaman, perHalaman: 50
+      });
+      gambarTabel();
+    } catch (err) {
+      document.getElementById('wadah-tabel').innerHTML =
+        '<div class="kosong">' + Fmt.aman(err.message) + '</div>';
+    }
+  }
+
+  function namaJenisDana(id) {
+    var j = master.jenis_dana.filter(function (x) { return x.id === id; })[0];
+    return j ? j.nama : '(' + id + ')';
+  }
+  function namaSumber(kode) {
+    var s = master.sumber_dana.filter(function (x) { return x.kode === kode; })[0];
+    return s ? s.nama : kode;
+  }
+  function namaPenggunaan(kode) {
+    var p = master.jenis_penggunaan.filter(function (x) { return x.kode === kode; })[0];
+    return p ? p.nama : kode;
+  }
+  function namaRincian(id) {
+    if (!id) return '';
+    var r = master.rincian.filter(function (x) { return x.id === id; })[0];
+    return r ? r.nama : '(' + id + ')';
+  }
+
+  function gambarTabel() {
+    var adminP = S.Sesi.pengguna().peran === 'admin';
+    document.getElementById('ringkas-daftar').textContent =
+      hasil.total + ' transaksi · total ' + Fmt.juta(hasil.jumlah_total) + ' juta rupiah';
+
+    if (!hasil.baris.length) {
+      document.getElementById('wadah-tabel').innerHTML =
+        '<div class="kosong">Tidak ada transaksi yang cocok dengan saringan ini.</div>';
+      perbaruiHalaman();
+      return;
+    }
+
+    var h = '<table class="data"><thead><tr>' +
+      (adminP ? '<th style="width:30px"><input type="checkbox" id="pilih-semua" style="width:auto"></th>' : '') +
+      '<th>Tanggal</th><th>Sumber / Jenis Dana</th><th>Penggunaan</th><th>Uraian</th>' +
+      '<th class="angka">Jumlah (Rp)</th><th>Status</th><th>Oleh</th><th></th>' +
+      '</tr></thead><tbody>';
+
+    hasil.baris.forEach(function (t) {
+      var lenc = t.status === 'Terverifikasi'
+        ? '<span class="lencana lencana-hijau">Terverifikasi</span>'
+        : '<span class="lencana lencana-jingga">Menunggu</span>';
+      var tinjau = t.perlu_tinjau ? ' <span class="lencana lencana-merah">perlu ditinjau</span>' : '';
+      var rinc = t.rincian_id ? '<br><small style="color:var(--teks-lemah)">' + Fmt.aman(namaRincian(t.rincian_id)) + '</small>' : '';
+
+      h += '<tr>' +
+        (adminP ? '<td><input type="checkbox" class="pilih" data-id="' + t.id + '" style="width:auto"></td>' : '') +
+        '<td>' + Fmt.tanggal(t.tanggal) + '<br><small style="color:var(--teks-lemah)">' + t.tahun + '</small></td>' +
+        '<td>' + Fmt.aman(namaSumber(t.sumber_kode)) +
+          '<br><small style="color:var(--teks-lemah)">' + Fmt.aman(namaJenisDana(t.jenis_dana_id)) + '</small>' + rinc + '</td>' +
+        '<td>' + Fmt.aman(namaPenggunaan(t.penggunaan_kode)) +
+          '<br><small style="color:var(--teks-lemah)">' + Fmt.aman(t.skema) + '</small></td>' +
+        '<td style="max-width:340px">' + Fmt.aman(t.uraian) + tinjau +
+          (t.catatan ? '<br><small style="color:var(--teks-lemah)">' + Fmt.aman(t.catatan) + '</small>' : '') + '</td>' +
+        '<td class="angka">' + Number(t.jumlah).toLocaleString('id-ID') + '</td>' +
+        '<td>' + lenc + '</td>' +
+        '<td><small>' + Fmt.aman(t.dibuat_oleh) + '</small></td>' +
+        '<td class="aksi">' +
+          '<button class="tombol-kecil ubah" data-id="' + t.id + '">Ubah</button> ' +
+          '<button class="tombol-kecil tombol-bahaya hapus" data-id="' + t.id + '">Hapus</button>' +
+        '</td></tr>';
+    });
+
+    document.getElementById('wadah-tabel').innerHTML = h + '</tbody></table>';
+
+    Array.prototype.forEach.call(document.querySelectorAll('.ubah'), function (b) {
+      b.addEventListener('click', function () {
+        formTransaksi(hasil.baris.filter(function (x) { return x.id === b.dataset.id; })[0]);
+      });
+    });
+    Array.prototype.forEach.call(document.querySelectorAll('.hapus'), function (b) {
+      b.addEventListener('click', function () {
+        var t = hasil.baris.filter(function (x) { return x.id === b.dataset.id; })[0];
+        S.UI.konfirmasi('Hapus transaksi', 'Hapus "' + t.uraian + '" senilai ' +
+          Fmt.rupiah(t.jumlah) + '? Tindakan ini tidak dapat dibatalkan.', async function () {
+          try {
+            var r = await S.API.panggil('hapusTransaksi', { id: t.id });
+            S.UI.sukses(r.pesan);
+            muatDaftar();
+          } catch (err) { S.UI.galat(err.message); }
+        }, 'Hapus');
+      });
+    });
+
+    var semua = document.getElementById('pilih-semua');
+    if (semua) {
+      semua.addEventListener('change', function () {
+        Array.prototype.forEach.call(document.querySelectorAll('.pilih'), function (c) {
+          c.checked = semua.checked;
+          if (semua.checked) terpilih[c.dataset.id] = true; else delete terpilih[c.dataset.id];
+        });
+        perbaruiMassal();
+      });
+    }
+    Array.prototype.forEach.call(document.querySelectorAll('.pilih'), function (c) {
+      c.addEventListener('change', function () {
+        if (c.checked) terpilih[c.dataset.id] = true; else delete terpilih[c.dataset.id];
+        perbaruiMassal();
+      });
+    });
+
+    perbaruiHalaman();
+  }
+
+  function perbaruiHalaman() {
+    var mulai = (halaman - 1) * (hasil.per_halaman || 50) + 1;
+    var akhir = Math.min(halaman * (hasil.per_halaman || 50), hasil.total);
+    document.getElementById('info-halaman').textContent = hasil.total
+      ? 'Menampilkan ' + mulai + '–' + akhir + ' dari ' + hasil.total
+      : '';
+    document.getElementById('tbl-sebelum').disabled = halaman <= 1;
+    document.getElementById('tbl-sesudah').disabled = akhir >= hasil.total;
+  }
+
+  function perbaruiMassal() {
+    var n = Object.keys(terpilih).length;
+    var el = document.getElementById('massal-jumlah');
+    if (el) el.textContent = n ? n + ' transaksi terpilih' : 'Pilih transaksi untuk memverifikasi';
+    ['tbl-verif', 'tbl-batal-verif', 'tbl-selesai-tinjau'].forEach(function (id) {
+      var b = document.getElementById(id);
+      if (b) b.disabled = !n;
+    });
+  }
+
+  async function ubahVerifikasi(status, selesaiTinjau) {
+    var ids = Object.keys(terpilih);
+    if (!ids.length) return;
+    try {
+      var r = await S.API.panggil('verifikasi', { ids: ids, status: status, selesaiTinjau: selesaiTinjau });
+      S.UI.sukses(r.pesan);
+      muatDaftar();
+    } catch (err) { S.UI.galat(err.message); }
+  }
+
+  // ------------------------------------------------------------ form isian
+
+  function formTransaksi(t) {
+    var isUbah = !!t;
+    var sumber = sumberBoleh();
+
+    var html =
+      '<div id="form-pesan"></div>' +
+      '<div class="baris-form">' +
+        '<div class="bidang"><label for="x-tanggal">Tanggal *</label>' +
+          '<input type="date" id="x-tanggal" value="' + Fmt.aman(t ? t.tanggal : '') + '">' +
+          '<div class="petunjuk">Tahun anggaran diambil dari tanggal ini.</div></div>' +
+        '<div class="bidang"><label for="x-sumber">Sumber dana *</label><select id="x-sumber">' +
+          sumber.map(function (s) {
+            return '<option value="' + s.kode + '"' + (t && t.sumber_kode === s.kode ? ' selected' : '') + '>' +
+              Fmt.aman(s.nama) + '</option>';
+          }).join('') + '</select></div>' +
+        '<div class="bidang"><label for="x-jenis">Jenis dana *</label><select id="x-jenis"></select></div>' +
+        '<div class="bidang"><label for="x-rincian">Rincian (opsional)</label><select id="x-rincian"></select>' +
+          '<div class="petunjuk">Muncul bila jenis dana punya daftar rincian.</div></div>' +
+        '<div class="bidang"><label for="x-penggunaan">Jenis penggunaan *</label><select id="x-penggunaan">' +
+          master.jenis_penggunaan.map(function (p) {
+            return '<option value="' + p.kode + '"' + (t && t.penggunaan_kode === p.kode ? ' selected' : '') + '>' +
+              p.no + '. ' + Fmt.aman(p.nama) + '</option>';
+          }).join('') + '</select></div>' +
+        '<div class="bidang"><label for="x-skema">Skema</label><select id="x-skema">' +
+          ['Mandiri', 'Kerjasama'].map(function (k) {
+            return '<option' + (t && t.skema === k ? ' selected' : '') + '>' + k + '</option>';
+          }).join('') + '</select></div>' +
+        '<div class="bidang"><label for="x-jumlah">Jumlah dana (Rp) *</label>' +
+          '<input id="x-jumlah" inputmode="numeric" value="' + (t ? Number(t.jumlah).toLocaleString('id-ID') : '') + '">' +
+          '<div class="petunjuk" id="x-jumlah-juta"></div></div>' +
+        '<div class="bidang bidang-lebar"><label for="x-uraian">Uraian / judul kegiatan *</label>' +
+          '<textarea id="x-uraian">' + Fmt.aman(t ? t.uraian : '') + '</textarea></div>' +
+        '<div class="bidang bidang-lebar"><label for="x-catatan">Catatan (opsional)</label>' +
+          '<input id="x-catatan" value="' + Fmt.aman(t ? t.catatan : '') + '"></div>' +
+        (t && t.perlu_tinjau
+          ? '<div class="bidang bidang-lebar"><label style="display:flex;gap:8px;align-items:center;font-weight:500">' +
+            '<input type="checkbox" id="x-tinjau" checked style="width:auto"> Masih perlu ditinjau manual</label>' +
+            '<div class="petunjuk">Hapus centang bila Anda sudah memastikan jenis penggunaannya benar.</div></div>'
+          : '') +
+      '</div>';
+
+    var m = S.UI.modal(isUbah ? 'Ubah transaksi ' + t.id : 'Tambah transaksi', html, [
+      { label: 'Batal', aksi: function (tutup) { tutup(); } },
+      {
+        label: 'Simpan', kelas: 'tombol-utama',
+        aksi: async function (tutup, tirai) {
+          var tbl = tirai.querySelector('.modal-kaki button:last-child');
+          tbl.disabled = true;
+          tbl.textContent = 'Menyimpan…';
+          try {
+            var tinjauEl = document.getElementById('x-tinjau');
+            var r = await S.API.panggil('simpanTransaksi', {
+              id: t ? t.id : '',
+              tanggal: document.getElementById('x-tanggal').value,
+              sumber_kode: document.getElementById('x-sumber').value,
+              jenis_dana_id: document.getElementById('x-jenis').value,
+              rincian_id: document.getElementById('x-rincian').value,
+              penggunaan_kode: document.getElementById('x-penggunaan').value,
+              skema: document.getElementById('x-skema').value,
+              jumlah: document.getElementById('x-jumlah').value.replace(/[^0-9]/g, ''),
+              uraian: document.getElementById('x-uraian').value,
+              catatan: document.getElementById('x-catatan').value,
+              perlu_tinjau: tinjauEl ? tinjauEl.checked : false
+            });
+            tutup();
+            S.UI.sukses(r.pesan);
+            muatDaftar();
+          } catch (err) {
+            document.getElementById('form-pesan').innerHTML =
+              '<div class="pesan pesan-galat">' + Fmt.aman(err.message) + '</div>';
+            tbl.disabled = false;
+            tbl.textContent = 'Simpan';
+          }
+        }
+      }
+    ]);
+
+    // Rantai pilihan: sumber -> jenis dana -> rincian
+    var selSumber = document.getElementById('x-sumber');
+    var selJenis = document.getElementById('x-jenis');
+    var selRincian = document.getElementById('x-rincian');
+
+    function isiJenis() {
+      var daftar = master.jenis_dana.filter(function (j) { return j.sumber_kode === selSumber.value; });
+      selJenis.innerHTML = daftar.length
+        ? daftar.map(function (j) {
+            return '<option value="' + j.id + '"' + (t && t.jenis_dana_id === j.id ? ' selected' : '') + '>' +
+              Fmt.aman(j.nama) + '</option>';
+          }).join('')
+        : '<option value="">(belum ada jenis dana untuk sumber ini)</option>';
+      isiRincian();
+    }
+
+    function isiRincian() {
+      var daftar = master.rincian.filter(function (r) { return r.jenis_dana_id === selJenis.value; });
+      if (!daftar.length) {
+        selRincian.innerHTML = '<option value="">(tidak ada rincian)</option>';
+        selRincian.disabled = true;
+        return;
+      }
+      selRincian.disabled = false;
+      selRincian.innerHTML = '<option value="">— tidak dirinci —</option>' + daftar.map(function (r) {
+        return '<option value="' + r.id + '"' + (t && t.rincian_id === r.id ? ' selected' : '') + '>' +
+          Fmt.aman(r.nama) + '</option>';
+      }).join('');
+    }
+
+    selSumber.addEventListener('change', isiJenis);
+    selJenis.addEventListener('change', isiRincian);
+    isiJenis();
+
+    // Pemformat ribuan + tampilan dalam juta agar mudah dicocokkan dengan borang.
+    var inJumlah = document.getElementById('x-jumlah');
+    function perbaruiJuta() {
+      var n = Number(inJumlah.value.replace(/[^0-9]/g, '')) || 0;
+      document.getElementById('x-jumlah-juta').textContent =
+        n ? '= ' + Fmt.juta(n) + ' juta rupiah' : 'Masukkan nominal penuh, contoh 24.750.000';
+    }
+    inJumlah.addEventListener('input', function () {
+      var pos = inJumlah.value.length - inJumlah.selectionStart;
+      var n = inJumlah.value.replace(/[^0-9]/g, '');
+      inJumlah.value = n ? Number(n).toLocaleString('id-ID') : '';
+      inJumlah.selectionStart = inJumlah.selectionEnd = Math.max(0, inJumlah.value.length - pos);
+      perbaruiJuta();
+    });
+    perbaruiJuta();
+
+    if (!t) document.getElementById('x-tanggal').value = new Date().toISOString().slice(0, 10);
+  }
+
+  // ------------------------------------------------------------ ganti sandi
+
+  function formSandi() {
+    var html = '<div id="sandi-pesan"></div>' +
+      '<div class="bidang" style="margin-bottom:14px"><label for="s-lama">Kata sandi lama</label>' +
+        '<input type="password" id="s-lama" autocomplete="current-password"></div>' +
+      '<div class="bidang" style="margin-bottom:14px"><label for="s-baru">Kata sandi baru</label>' +
+        '<input type="password" id="s-baru" autocomplete="new-password">' +
+        '<div class="petunjuk">Minimal 8 karakter.</div></div>' +
+      '<div class="bidang"><label for="s-ulang">Ulangi kata sandi baru</label>' +
+        '<input type="password" id="s-ulang" autocomplete="new-password"></div>';
+
+    S.UI.modal('Ganti kata sandi', html, [
+      { label: 'Batal', aksi: function (tutup) { tutup(); } },
+      {
+        label: 'Simpan', kelas: 'tombol-utama',
+        aksi: async function (tutup) {
+          var baru = document.getElementById('s-baru').value;
+          if (baru !== document.getElementById('s-ulang').value) {
+            document.getElementById('sandi-pesan').innerHTML =
+              '<div class="pesan pesan-galat">Kata sandi baru dan ulangannya tidak sama.</div>';
+            return;
+          }
+          try {
+            var r = await S.API.panggil('gantiSandi', {
+              sandiLama: document.getElementById('s-lama').value, sandiBaru: baru
+            });
+            tutup();
+            S.UI.sukses(r.pesan);
+          } catch (err) {
+            document.getElementById('sandi-pesan').innerHTML =
+              '<div class="pesan pesan-galat">' + Fmt.aman(err.message) + '</div>';
+          }
+        }
+      }
+    ]);
+  }
+
+  // ------------------------------------------------------------------ csv
+
+  async function unduhCsv() {
+    try {
+      var semua = await S.API.panggil('listTransaksi', {
+        filter: saringSekarang(), halaman: 1, perHalaman: 500
+      });
+      var baris = [['ID', 'Tanggal', 'Tahun', 'Sumber Dana', 'Jenis Dana', 'Rincian',
+                    'Jenis Penggunaan', 'Skema', 'Uraian', 'Jumlah (Rp)', 'Status', 'Dibuat oleh']];
+      semua.baris.forEach(function (t) {
+        baris.push([t.id, t.tanggal, t.tahun, namaSumber(t.sumber_kode), namaJenisDana(t.jenis_dana_id),
+                    namaRincian(t.rincian_id), namaPenggunaan(t.penggunaan_kode), t.skema, t.uraian,
+                    t.jumlah, t.status, t.dibuat_oleh]);
+      });
+      S.Ekspor.barisKeCsv(baris, 'transaksi-keuangan');
+      if (semua.total > semua.baris.length) {
+        S.UI.toast('Diunduh ' + semua.baris.length + ' dari ' + semua.total +
+          ' baris. Persempit saringan untuk mengunduh sisanya.');
+      }
+    } catch (err) { S.UI.galat(err.message); }
+  }
+})();
+</script>
+</body>
+</html>
