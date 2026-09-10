@@ -298,7 +298,12 @@
             '<small>' + Fmt.aman(CFG.subJudul || '') + '</small></div>' +
           '<nav class="nav">' + nav + blok + '</nav>' +
         '</div>';
-      document.body.insertBefore(el, document.body.firstChild);
+
+      // Halaman memasang kerangka kepala statis agar tidak tampak putih kosong
+      // selama menunggu server; di sini kerangka itu diganti yang sebenarnya.
+      var kerangka = document.querySelector('header.kepala');
+      if (kerangka) kerangka.parentNode.replaceChild(el, kerangka);
+      else document.body.insertBefore(el, document.body.firstChild);
 
       var keluar = document.getElementById('tbl-keluar');
       if (keluar) {
@@ -325,8 +330,22 @@
       }
     },
 
+    /**
+     * Hapus layar tunggu awal.
+     *
+     * Apps Script perlu beberapa detik untuk bangun dari dingin pada panggilan
+     * pertama. Tanpa layar tunggu, halaman tampak putih kosong dan terbaca
+     * seperti gagal — jadi kerangkanya dipasang statis di HTML, lalu dibuang
+     * di sini begitu ada yang bisa ditampilkan.
+     */
+    selesaiMuat: function () {
+      var el = document.getElementById('layar-muat');
+      if (el) el.remove();
+    },
+
     /** Layar penuh "silakan masuk" untuk halaman yang menuntut identitas. */
     layarMasuk: function (wadah, judul, keterangan) {
+      UI.selesaiMuat();
       wadah.innerHTML =
         '<div class="masuk-bungkus"><div class="kartu">' +
           '<div class="kartu-kepala"><h2 class="kartu-judul">' + Fmt.aman(judul) + '</h2></div>' +

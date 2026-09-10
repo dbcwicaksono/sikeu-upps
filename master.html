@@ -8,7 +8,18 @@
 </head>
 <body>
 
+<header class="kepala kerangka">
+  <div class="kepala-isi">
+    <div class="merek">SIKEU-UPPS<small>Sistem Informasi Keuangan untuk Tabel 12 &amp; Tabel 13 Akreditasi</small></div>
+    <nav class="nav"></nav>
+  </div>
+</header>
 <div class="wadah" id="wadah">
+  <div id="layar-muat" class="memuat-penuh">
+    <div class="pias-besar"></div>
+    <div class="judul-muat">Memuat master data…</div>
+    <div class="ket-muat" id="ket-muat">Menghubungi server.</div>
+  </div>
   <div id="layar-kerja" hidden>
     <h1 class="judul-halaman">Kelola Master Data</h1>
     <p class="sub-halaman">Sumber dana Tabel 12 dan jenis penggunaan Tabel 13 bersifat tetap sesuai format
@@ -28,6 +39,16 @@
     <div id="isi-tab"><div class="memuat"><span class="pias"></span>Memuat…</div></div>
   </div>
 </div>
+
+<script>
+// Apps Script perlu beberapa detik bangun dari dingin pada panggilan pertama.
+// Setelah 2,5 detik, jelaskan penyebabnya supaya jeda ini tidak terbaca sebagai gagal.
+setTimeout(function () {
+  var e = document.getElementById("ket-muat");
+  if (e) e.textContent = "Panggilan pertama memakan beberapa detik karena Google Apps Script "
+    + "perlu bangun dari mode tidur. Pemanggilan berikutnya jauh lebih cepat.";
+}, 2500);
+</script>
 
 <script src="config.js"></script>
 <script src="assets/app.js"></script>
@@ -58,6 +79,7 @@
         (Auth.samaran() ? ' Anda sedang memakai mode "Lihat sebagai" — kembalikan ke Admin untuk mengelola master.' : ''));
     }
 
+    S.UI.selesaiMuat();
     document.getElementById('layar-kerja').hidden = false;
     Array.prototype.forEach.call(document.querySelectorAll('#tab-bar button'), function (b) {
       b.addEventListener('click', function () {
@@ -79,6 +101,7 @@
   }
 
   function galat(pesan) {
+    S.UI.selesaiMuat();
     document.getElementById('wadah').insertAdjacentHTML('beforeend',
       '<div class="pesan pesan-galat">' + Fmt.aman(pesan) + '</div>');
   }

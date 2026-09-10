@@ -8,9 +8,22 @@
 </head>
 <body>
 
+<header class="kepala kerangka">
+  <div class="kepala-isi">
+    <div class="merek">SIKEU-UPPS<small>Sistem Informasi Keuangan untuk Tabel 12 &amp; Tabel 13 Akreditasi</small></div>
+    <nav class="nav"></nav>
+  </div>
+</header>
+
 <div class="wadah" id="wadah">
   <h1 class="judul-halaman">Dashboard Keuangan</h1>
-  <p class="sub-halaman" id="sub-judul">Memuat data…</p>
+  <p class="sub-halaman" id="sub-judul"></p>
+
+  <div id="layar-muat" class="memuat-penuh">
+    <div class="pias-besar"></div>
+    <div class="judul-muat">Memuat data keuangan…</div>
+    <div class="ket-muat" id="ket-muat">Menghubungi server.</div>
+  </div>
 
   <div id="isi" hidden>
     <div class="kartu jangan-cetak">
@@ -97,6 +110,16 @@
   </div>
 </div>
 
+<script>
+// Apps Script perlu beberapa detik bangun dari dingin pada panggilan pertama.
+// Setelah 2,5 detik, jelaskan penyebabnya supaya jeda ini tidak terbaca sebagai gagal.
+setTimeout(function () {
+  var e = document.getElementById("ket-muat");
+  if (e) e.textContent = "Panggilan pertama memakan beberapa detik karena Google Apps Script "
+    + "perlu bangun dari mode tidur. Pemanggilan berikutnya jauh lebih cepat.";
+}, 2500);
+</script>
+
 <script src="config.js"></script>
 <script src="assets/app.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
@@ -138,14 +161,16 @@
   // ------------------------------------------------------------------ muat
 
   async function muat(paksa) {
-    document.getElementById('sub-judul').innerHTML = '<span class="pias"></span>Memuat data…';
+    if (paksa) document.getElementById('sub-judul').innerHTML = '<span class="pias"></span>Memuat data…';
     try {
       rekap = await S.API.panggil('rekap', {});
+      S.UI.selesaiMuat();
       document.getElementById('isi').hidden = false;
       siapkanPeriode();
       gambar();
       if (paksa) S.UI.sukses('Data dimuat ulang.');
     } catch (err) {
+      S.UI.selesaiMuat();
       document.getElementById('sub-judul').textContent = '';
       document.getElementById('isi').hidden = true;
       if (err.perluMasuk) {
