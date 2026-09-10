@@ -72,10 +72,14 @@ Rantai bertingkat (A→B→C) ditelusuri sampai ujung, dan siklus ditolak.
 2. **Ekstensi → Apps Script**. Hapus isi `Code.gs`, lalu buat dua berkas:
    - `Kode.gs` ← isi [apps-script/Kode.gs](apps-script/Kode.gs)
    - `Setup.gs` ← isi [apps-script/Setup.gs](apps-script/Setup.gs)
-3. Di `Kode.gs`, sesuaikan tiga konstanta di bagian atas: `CLIENT_ID`, `DOMAIN_KAMPUS`,
-   dan `ADMIN_AWAL`.
+3. Di `Kode.gs`, sesuaikan dua konstanta di bagian atas: `CLIENT_ID` dan `DOMAIN_KAMPUS`.
 4. Jalankan fungsi **`setupSpreadsheet`** satu kali. Seluruh tab, header, master data,
    dropdown validasi, dan format rupiah dibuat otomatis.
+
+Akun yang menjalankan setup itu otomatis menjadi **admin pertama**. Tidak ada daftar email
+di dalam kode — berkas ini tersimpan di repositori publik, dan menuliskan alamat email
+siapa pun di sana sama saja dengan menyerahkannya kepada pengumpul spam. Admin berikutnya
+ditambahkan lewat halaman Kelola Master.
 
 ### 3. Terbitkan sebagai Web App
 
@@ -192,13 +196,13 @@ daftarnya*, lalu pindahkan yang memang prasarana.
 
 ### Empat kekeliruan pada berkas Excel yang diperbaiki
 
-1. **Dua nominal tersimpan sebagai teks** — `39.146.550` dan `106. 757.000` (perhatikan
-   spasi nyasar), keduanya tahun 2024. `SUM` di Excel mengabaikan sel teks, jadi kedua
-   transaksi ini **tidak pernah masuk hitungan**. Setelah dipulihkan, total 2024 naik dari
-   24.906,46 menjadi **25.052,37 juta**.
+1. **Dua nominal tersimpan sebagai teks** — dua nominal (salah satunya dengan
+   spasi nyasar di tengah angka), keduanya tahun 2024. `SUM` di Excel mengabaikan sel teks, jadi kedua
+   transaksi ini **tidak pernah masuk hitungan**. Setelah dipulihkan, total tahun 2024
+   bertambah sekitar 146 juta rupiah.
 2. **Sel Kantin 2025 pada Tabel 12** memakai rumus `ROUND(E68/1000000,2)` yang menunjuk
-   baris **Renbis**. Akibatnya Kantin 2025 tertulis 186,25 (semestinya 0) dan sel Renbis
-   2025 dibiarkan kosong (semestinya 186,25).
+   baris **Renbis**. Akibatnya nilai Kantin 2025 terisi angka milik Renbis, sedangkan sel Renbis
+   2025 sendiri dibiarkan kosong.
 3. **Judul kolom** tertulis `TS-2` tiga kali. Label kini diambil dari `M_Tahun`.
 4. **Pembulatan tidak konsisten** sehingga baris tidak selalu menjumlah — lihat bagian
    berikut.
@@ -268,5 +272,5 @@ assets/style.css      Gaya bersama, termasuk aturan cetak
 apps-script/Kode.gs   API: verifikasi token, peran, CRUD, agregasi, penggabungan
 apps-script/Setup.gs  setupSpreadsheet(), seed master, periksaData()
 data/transaksi.csv    617 transaksi hasil migrasi (lokal, tidak di repo)
-tools/                Uji regresi perhitungan (acuan.json lokal, tidak di repo)
+tools/                Uji regresi perhitungan (lokal, tidak di repo)
 ```

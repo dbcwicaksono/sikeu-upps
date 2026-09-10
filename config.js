@@ -13,7 +13,7 @@
  */
 window.SIKEU_CONFIG = {
   /** URL Web App Apps Script, berakhiran /exec. */
-  apiUrl: 'GANTI_DENGAN_URL_WEB_APP_ANDA',
+  apiUrl: 'https://script.google.com/macros/s/AKfycbwMpc4GPdYgFe9TRXzNRTGY7aM6oDiQSkK8KnNaseitJXDlSiWevp4e7ah-GQ8Erqnl/exec',
 
   /** OAuth Client ID dari Google Cloud Console. */
   clientId: '23882881057-72q15pps3vnja29bb8045kv2692ngiha.apps.googleusercontent.com',

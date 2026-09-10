@@ -105,7 +105,7 @@ function setupSpreadsheet() {
   isiJikaKosong('M_Rincian', SEED_RINCIAN.map(function (r) { return [r[0], r[1], r[2], r[3], true]; }));
   isiJikaKosong('M_Tahun', SEED_TAHUN);
   isiJikaKosong('M_Parameter', SEED_PARAMETER);
-  seedAdmin();
+  var kabarAdmin = seedAdmin();
 
   pasangValidasi();
   rapikanTampilan();
@@ -113,8 +113,7 @@ function setupSpreadsheet() {
   var pesan =
     'Penyiapan selesai.\n\n' +
     'Tab yang dibuat: ' + Object.keys(SKEMA).join(', ') + '\n\n' +
-    'Admin bawaan (login lewat Google Sign-In, tanpa kata sandi):\n  ' +
-    ADMIN_AWAL.join('\n  ') + '\n\n' +
+    (kabarAdmin ? kabarAdmin + '\n  (login lewat Google Sign-In, tanpa kata sandi)\n\n' : '') +
     'Langkah berikutnya:\n' +
     '  1. Deploy > New deployment > Web app\n' +
     '     Execute as: Me   |   Who has access: Anyone\n' +
@@ -134,13 +133,26 @@ function isiJikaKosong(nama, baris) {
   s.getRange(2, 1, baris.length, baris[0].length).setValues(baris);
 }
 
+/**
+ * Admin pertama adalah akun yang menjalankan setup ini — yaitu pemilik skrip.
+ *
+ * Sengaja tidak ada daftar email di dalam kode, karena berkas ini tersimpan di
+ * repositori publik. Admin berikutnya ditambahkan lewat halaman Kelola Master.
+ */
 function seedAdmin() {
   var s = SpreadsheetApp.getActive().getSheetByName('M_Pengguna');
-  if (s.getLastRow() > 1) return;
-  var baris = ADMIN_AWAL.map(function (e) {
-    return [e, e.split('@')[0], 'admin', true, sekarang(), '', 'Admin bawaan'];
-  });
-  s.getRange(2, 1, baris.length, baris[0].length).setValues(baris);
+  if (s.getLastRow() > 1) return '';
+
+  var email = '';
+  try { email = String(Session.getEffectiveUser().getEmail() || '').toLowerCase(); } catch (err) {}
+  if (!email) {
+    return 'PERINGATAN: email pemilik skrip tidak terbaca, jadi belum ada admin. ' +
+           'Tambahkan sendiri satu baris di sheet M_Pengguna: email Anda, nama, "admin", TRUE.';
+  }
+  s.getRange(2, 1, 1, SKEMA.M_Pengguna.length).setValues([[
+    email, email.split('@')[0], 'admin', true, sekarang(), '', 'Admin pertama (pemilik skrip)'
+  ]]);
+  return 'Admin pertama: ' + email;
 }
 
 /** Dropdown pada tab Transaksi supaya penyuntingan manual tetap terkendali. */

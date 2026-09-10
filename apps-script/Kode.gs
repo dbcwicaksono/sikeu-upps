@@ -25,8 +25,14 @@ var CLIENT_ID = '23882881057-72q15pps3vnja29bb8045kv2692ngiha.apps.googleusercon
 /** Domain kampus. Pemilik email di domain ini otomatis menjadi operator. */
 var DOMAIN_KAMPUS = ['unej.ac.id', 'mail.unej.ac.id'];
 
-/** Admin bawaan, dipakai saat sheet M_Pengguna masih kosong. */
-var ADMIN_AWAL = ['rakyatkecil99@gmail.com', 'dadonesuaro@gmail.com', 'elstat.net@gmail.com'];
+/*
+ * Tidak ada daftar admin di berkas ini.
+ *
+ * Berkas ini tersimpan di repositori publik, jadi menuliskan alamat email
+ * siapa pun di sini berarti memublikasikannya ke pengumpul spam. Admin pertama
+ * dibuat oleh setupSpreadsheet() dari akun yang menjalankannya, dan selanjutnya
+ * seluruh pemetaan email ke peran ada di sheet M_Pengguna yang bersifat privat.
+ */
 
 var PERAN = { ADMIN: 'admin', VERIFIKATOR: 'verifikator', OPERATOR: 'operator', PUBLIK: 'publik' };
 
@@ -215,13 +221,6 @@ function kenaliPengguna(idToken, lihatSebagai) {
     if (!benar(baris.aktif)) throw new Error('Akun ' + g.email + ' dinonaktifkan. Hubungi Wakil Dekan.');
     peran = String(baris.peran).trim().toLowerCase();
     if (!TINGKAT.hasOwnProperty(peran)) peran = PERAN.PUBLIK;
-  } else if (ADMIN_AWAL.indexOf(g.email) >= 0) {
-    // Admin bawaan didaftarkan saat pertama kali masuk.
-    tambahBaris('M_Pengguna', {
-      email: g.email, nama: g.nama, peran: PERAN.ADMIN, aktif: true,
-      dibuat_pada: sekarang(), terakhir_masuk: sekarang(), catatan: 'Admin bawaan'
-    });
-    peran = PERAN.ADMIN;
   } else if (domainKampus(g.email)) {
     // Siapa pun berakun kampus boleh mengajukan draft; namanya terkunci ke email.
     tambahBaris('M_Pengguna', {
