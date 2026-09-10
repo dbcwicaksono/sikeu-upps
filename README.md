@@ -101,8 +101,19 @@ Berkas `data/transaksi.csv` ada di komputer Anda dan **sengaja tidak diunggah** 
 repositori publik karena memuat catatan keuangan sesungguhnya. Isinya 617 transaksi hasil
 migrasi dari `Data Keuangan.xlsx`.
 
-Di Google Sheet: buka tab **`Transaksi`** → **File → Impor → Unggah** → pilih berkas itu →
-**Ganti lembar saat ini**, pemisah **koma**. Lalu jalankan menu **SIKEU → Periksa data**.
+Di Google Sheet: **klik tab `Transaksi` lebih dulu** → **File → Impor → Unggah** → pilih
+berkas itu → **Ganti lembar saat ini**, pemisah **koma**. Lalu jalankan menu
+**SIKEU → Periksa data**.
+
+> **Pastikan tab `Transaksi` benar-benar aktif sebelum mengimpor.** Pilihan *Ganti lembar
+> saat ini* menimpa sheet yang sedang terbuka, apa pun itu — kalau tab lain yang aktif,
+> data akan mendarat di sana dan menghapus isinya. Bila telanjur: hapus tab yang tertimpa,
+> klik tab `Transaksi`, impor ulang, lalu jalankan **SIKEU → Siapkan spreadsheet** untuk
+> memulihkan tab yang hilang. Fungsi itu hanya membuat yang belum ada dan mengisi yang
+> masih kosong, jadi aman dijalankan berulang.
+>
+> **SIKEU → Periksa data** kini memeriksa header setiap sheet dan akan menyebutkan
+> secara langsung bila ada data yang mendarat di tab yang keliru.
 
 ---
 

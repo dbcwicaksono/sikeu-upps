@@ -222,6 +222,27 @@ function periksaData() {
 
   var masalah = [];
 
+  // Header tiap sheet diperiksa lebih dulu. Impor CSV dengan "Ganti lembar
+  // saat ini" menimpa sheet yang sedang AKTIF, sehingga data mudah mendarat di
+  // tab yang salah. Gejalanya membingungkan kalau tidak dinamai terus terang.
+  Object.keys(SKEMA).forEach(function (nama) {
+    var s = SpreadsheetApp.getActive().getSheetByName(nama);
+    if (!s) { masalah.push('Sheet "' + nama + '" tidak ada'); return; }
+    var header = s.getRange(1, 1, 1, Math.max(s.getLastColumn(), 1)).getValues()[0]
+      .map(function (h) { return String(h).trim(); });
+    var harus = SKEMA[nama];
+    var cocok = harus.every(function (k, i) { return header[i] === k; });
+    if (!cocok) {
+      masalah.push('Sheet "' + nama + '" headernya tidak sesuai. Seharusnya diawali: ' +
+        harus.slice(0, 4).join(', ') + ' ... — tetapi terbaca: ' +
+        header.slice(0, 4).join(', ') +
+        (header[0] === 'id' && nama !== 'Transaksi'
+          ? '  >>> sepertinya data Transaksi ter-impor ke tab ini. Hapus tab ini, klik tab ' +
+            'Transaksi lebih dulu, impor ulang, lalu jalankan Siapkan spreadsheet.'
+          : ''));
+    }
+  });
+
   // Siklus penggabungan diperiksa lebih dulu karena merusak seluruh agregasi.
   Object.keys(peta).forEach(function (k) {
     try { ujungGabung(k, peta); }
