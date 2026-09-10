@@ -105,7 +105,7 @@ function setupSpreadsheet() {
   isiJikaKosong('M_JenisDana', SEED_JENIS_DANA.map(function (r) { return [r[0], r[1], r[2], r[3], true, '']; }));
   isiJikaKosong('M_Rincian', SEED_RINCIAN.map(function (r) { return [r[0], r[1], r[2], r[3], true]; }));
   isiJikaKosong('M_Tahun', SEED_TAHUN);
-  isiJikaKosong('M_Parameter', SEED_PARAMETER);
+  var paramBaru = lengkapiParameter();
   var kabarAdmin = seedAdmin();
 
   pasangValidasi();
@@ -115,6 +115,9 @@ function setupSpreadsheet() {
     'Penyiapan selesai.\n\n' +
     'Tab yang dibuat: ' + Object.keys(SKEMA).join(', ') + '\n\n' +
     (kabarAdmin ? kabarAdmin + '\n  (login lewat Google Sign-In, tanpa kata sandi)\n\n' : '') +
+    (paramBaru.length
+      ? 'Parameter baru ditambahkan: ' + paramBaru.join(', ') + '\n' +
+        '  Periksa nilainya di Kelola Master > Parameter Penilaian.\n\n' : '') +
     'Langkah berikutnya:\n' +
     '  1. Deploy > New deployment > Web app\n' +
     '     Execute as: Me   |   Who has access: Anyone\n' +
@@ -132,6 +135,26 @@ function isiJikaKosong(nama, baris) {
   var s = SpreadsheetApp.getActive().getSheetByName(nama);
   if (s.getLastRow() > 1 || !baris.length) return;
   s.getRange(2, 1, baris.length, baris[0].length).setValues(baris);
+}
+
+/**
+ * Tambahkan kunci parameter yang belum ada, tanpa menyentuh yang sudah diisi.
+ *
+ * Berbeda dari master lain, daftar parameter bertambah seiring waktu. Kalau
+ * hanya diisi saat sheet masih kosong, setiap parameter baru yang muncul di
+ * versi berikutnya tidak akan pernah sampai ke spreadsheet yang sudah jalan —
+ * dan pengelola harus menambahkannya manual tanpa tahu bahwa itu perlu.
+ */
+function lengkapiParameter() {
+  var s = SpreadsheetApp.getActive().getSheetByName('M_Parameter');
+  var ada = {};
+  baca('M_Parameter').forEach(function (r) { ada[String(r.kunci).trim()] = true; });
+
+  var kurang = SEED_PARAMETER.filter(function (p) { return !ada[p[0]]; });
+  if (!kurang.length) return [];
+
+  s.getRange(s.getLastRow() + 1, 1, kurang.length, 3).setValues(kurang);
+  return kurang.map(function (p) { return p[0]; });
 }
 
 /**
