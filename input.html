@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Input Data Keuangan — SIKEU</title>
-<link rel="stylesheet" href="assets/style.css?v=20260910g">
+<link rel="stylesheet" href="assets/style.css?v=20260910h">
 </head>
 <body>
 
@@ -110,8 +110,8 @@ setTimeout(function () {
 }, 20000);
 </script>
 
-<script src="config.js?v=20260910g"></script>
-<script src="assets/app.js?v=20260910g"></script>
+<script src="config.js?v=20260910h"></script>
+<script src="assets/app.js?v=20260910h"></script>
 <script>
 (function () {
   'use strict';
@@ -352,7 +352,7 @@ setTimeout(function () {
           '<br><small style="color:var(--teks-lemah)">' + Fmt.aman(namaJenisDana(t.jenis_dana_kode)) +
           '</small>' + digabung + rinc + '</td>' +
         '<td>' + Fmt.aman(namaPenggunaan(t.penggunaan_kode)) +
-          '<br><small style="color:var(--teks-lemah)">' + Fmt.aman(t.skema) + '</small></td>' +
+          (t.skema ? '<br><small style="color:var(--teks-lemah)">' + Fmt.aman(t.skema) + '</small>' : '') + '</td>' +
         '<td style="max-width:330px">' + Fmt.aman(t.uraian) + tinjau +
           (t.catatan ? '<br><small style="color:var(--teks-lemah)">' + Fmt.aman(t.catatan) + '</small>' : '') +
           alasan + '</td>' +
@@ -733,10 +733,6 @@ setTimeout(function () {
             return '<option value="' + p.kode + '"' + (pre && pre.penggunaan_kode === p.kode ? ' selected' : '') + '>' +
               p.no + '. ' + Fmt.aman(p.nama) + '</option>';
           }).join('') + '</select></div>' +
-        '<div class="bidang"><label for="x-skema">Skema</label><select id="x-skema">' +
-          ['Mandiri', 'Kerjasama'].map(function (k) {
-            return '<option' + (pre && pre.skema === k ? ' selected' : '') + '>' + k + '</option>';
-          }).join('') + '</select></div>' +
         '<div class="bidang"><label for="x-jumlah">Jumlah dana (Rp) *</label>' +
           '<input id="x-jumlah" inputmode="numeric" value="' +
           (pre ? Number(pre.jumlah).toLocaleString('id-ID') : '') + '">' +
@@ -762,7 +758,6 @@ setTimeout(function () {
           jenis_dana_kode: document.getElementById('x-jenis').value,
           rincian_kode: document.getElementById('x-rincian').value,
           penggunaan_kode: document.getElementById('x-penggunaan').value,
-          skema: document.getElementById('x-skema').value,
           jumlah: document.getElementById('x-jumlah').value.replace(/[^0-9]/g, ''),
           uraian: document.getElementById('x-uraian').value,
           catatan: document.getElementById('x-catatan').value,

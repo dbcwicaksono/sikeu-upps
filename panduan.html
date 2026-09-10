@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Panduan Pemakaian — SIKEU</title>
-<link rel="stylesheet" href="assets/style.css?v=20260910g">
+<link rel="stylesheet" href="assets/style.css?v=20260910h">
 <style>
   .panduan { display: grid; grid-template-columns: 230px 1fr; gap: 28px; align-items: start; }
   .daftar-isi { position: sticky; top: 78px; }
@@ -280,8 +280,6 @@
                         dilewati — tidak mempengaruhi borang.</td></tr>
                 <tr><td><b>Jenis penggunaan</b></td>
                     <td>Untuk apa uangnya. Tujuh pilihan tetap, inilah baris Tabel 13.</td></tr>
-                <tr><td><b>Skema</b></td>
-                    <td>Mandiri atau Kerjasama.</td></tr>
                 <tr><td><b>Jumlah dana</b></td>
                     <td>Nominal penuh dalam rupiah, mis. <code>24750000</code>. Titik ribuan
                         muncul sendiri, dan nilainya ditampilkan juga dalam juta supaya mudah
@@ -292,6 +290,11 @@
               </tbody>
             </table>
           </div>
+
+          <div class="pesan pesan-info">Data lama punya kolom <b>Skema</b> berisi Mandiri atau
+            Kerjasama. Kolom itu tidak lagi ditanyakan saat mengisi: nilainya tidak dipakai
+            perhitungan borang mana pun, dan hampir selalu sudah tertebak dari jenis dananya.
+            Isian lama tetap tersimpan dan tetap terlihat pada daftar transaksi.</div>
 
           <h3>Setelah tersimpan</h3>
           <p>Entri masuk sebagai <b>draft</b>. Kumpulkan sebanyak yang perlu, periksa ulang,
@@ -668,8 +671,8 @@
   </div>
 </div>
 
-<script src="config.js?v=20260910g"></script>
-<script src="assets/app.js?v=20260910g"></script>
+<script src="config.js?v=20260910h"></script>
+<script src="assets/app.js?v=20260910h"></script>
 <script>
 (function () {
   'use strict';

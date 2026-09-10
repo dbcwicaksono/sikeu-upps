@@ -595,7 +595,7 @@ function aksiRekap() {
     // Kategori yang digabungkan dilaporkan pada kategori tujuannya.
     var jd = ujungGabung(String(t.jenis_dana_kode).trim(), peta);
     var k = [t.sumber_kode, jd, t.rincian_kode || '', t.penggunaan_kode,
-             t.skema || 'Mandiri', angka(t.tahun), st].join('||');
+             t.skema || '', angka(t.tahun), st].join('||');
     if (!ember[k]) ember[k] = { n: 0, c: 0 };
     ember[k].n += angka(t.jumlah);
     ember[k].c += 1;
@@ -700,7 +700,7 @@ function validasiTransaksi(d) {
     jenis_dana_kode: String(d.jenis_dana_kode || '').trim(),
     rincian_kode: String(d.rincian_kode || '').trim(),
     penggunaan_kode: String(d.penggunaan_kode || '').trim(),
-    skema: String(d.skema || 'Mandiri').trim(),
+    skema: String(d.skema || '').trim(),
     uraian: String(d.uraian || '').trim(),
     jumlah: angka(d.jumlah),
     catatan: String(d.catatan || '').trim(),
@@ -730,7 +730,20 @@ function validasiTransaksi(d) {
     }
   }
   if (!cariBaris('M_JenisPenggunaan', 'kode', t.penggunaan_kode)) throw new Error('Jenis penggunaan wajib dipilih.');
-  if (['Mandiri', 'Kerjasama'].indexOf(t.skema) < 0) t.skema = 'Mandiri';
+  /*
+   * Skema Mandiri/Kerjasama tidak lagi ditanyakan pada formulir.
+   *
+   * Nilainya tidak pernah dipakai perhitungan borang mana pun, dan pada 10 dari
+   * 13 jenis dana isinya sudah tertebak dari jenis dananya sendiri — dua di
+   * antaranya bahkan bernama "Kerjasama", sehingga menyimpannya lagi berarti
+   * menyatakan hal yang sama dua kali.
+   *
+   * Kolomnya tetap ada supaya data lama utuh dan tetap dapat ditelusuri, dan
+   * nilai yang sah tetap diterima bila dikirim. Entri baru dibiarkan kosong,
+   * bukan diisi "Mandiri", agar sistem tidak mengarang keterangan yang tidak
+   * pernah dinyatakan siapa pun.
+   */
+  if (['Mandiri', 'Kerjasama', ''].indexOf(t.skema) < 0) t.skema = '';
   if (!t.uraian) throw new Error('Uraian wajib diisi.');
   if (!(t.jumlah > 0)) throw new Error('Jumlah dana harus lebih besar dari nol.');
   return t;
