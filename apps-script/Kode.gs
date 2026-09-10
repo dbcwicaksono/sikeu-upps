@@ -259,6 +259,7 @@ var IZIN = {
   rekap:             PERAN.PUBLIK,
   listTransaksi:     PERAN.OPERATOR,
   simpanTransaksi:   PERAN.OPERATOR,
+  simpanTransaksiMassal: PERAN.OPERATOR,
   hapusTransaksi:    PERAN.OPERATOR,
   ajukanTransaksi:   PERAN.OPERATOR,
   putusanVerifikasi: PERAN.VERIFIKATOR,
@@ -352,6 +353,7 @@ function jalankan(aksi, d, u) {
     case 'rekap':             return aksiRekap();
     case 'listTransaksi':     return aksiListTransaksi(d, u);
     case 'simpanTransaksi':   return aksiSimpanTransaksi(d, u);
+    case 'simpanTransaksiMassal': return aksiSimpanTransaksiMassal(d, u);
     case 'hapusTransaksi':    return aksiHapusTransaksi(d, u);
     case 'ajukanTransaksi':   return aksiAjukan(d, u);
     case 'putusanVerifikasi': return aksiPutusan(d, u);
@@ -759,6 +761,93 @@ function aksiSimpanTransaksi(d, u) {
   hapusCache();
   return { id: bersih.id, status: STATUS.DRAFT,
            pesan: 'Tersimpan sebagai draft. Klik "Ajukan" bila sudah siap diverifikasi.' };
+}
+
+/**
+ * Simpan banyak transaksi baru sekaligus.
+ *
+ * Satu panggilan bolak-balik ke Apps Script memakan sekitar tiga detik, jadi
+ * menyimpan lima puluh entri satu per satu berarti dua setengah menit murni
+ * menunggu. Di sini seluruh baris ditulis dalam SATU setValues.
+ *
+ * Entri yang gagal divalidasi tidak menggagalkan yang lain: yang lolos tetap
+ * tersimpan, dan yang gagal dikembalikan beserta alasannya untuk diperbaiki.
+ *
+ * Tiap entri membawa kunci idempotensi dari sisi klien. Bila jaringan terputus
+ * setelah server selesai menulis, klien akan mencoba lagi — dan kunci itulah
+ * yang mencegah entri yang sama masuk dua kali.
+ */
+function aksiSimpanTransaksiMassal(d, u) {
+  var daftar = d.daftar || [];
+  if (!daftar.length) return { hasil: [], berhasil: 0, gagal: 0, pesan: 'Tidak ada entri yang dikirim.' };
+  if (daftar.length > 200) throw new Error('Maksimal 200 entri sekali kirim. Kirim bertahap.');
+
+  var cache = CacheService.getScriptCache();
+  var s = sheet('Transaksi');
+  var kolom = SKEMA.Transaksi;
+
+  // Nomor urut dihitung sekali di awal, bukan dipindai ulang tiap baris.
+  var maks = 0;
+  baca('Transaksi').forEach(function (r) {
+    var m = String(r.id).match(/^T(\d+)$/);
+    if (m) maks = Math.max(maks, parseInt(m[1], 10));
+  });
+
+  var hasil = [], barisBaru = [], kunciBaru = [];
+  var waktu = sekarang();
+
+  daftar.forEach(function (item) {
+    var kunci = String(item.kunci || '').trim();
+
+    if (kunci) {
+      var sudah = cache.get('idem_' + kunci);
+      if (sudah) {
+        // Sudah pernah ditulis pada percobaan sebelumnya.
+        hasil.push({ kunci: kunci, ok: true, id: sudah, ulangan: true });
+        return;
+      }
+    }
+
+    try {
+      var bersih = validasiTransaksi(item);
+      pastikanBolehTulis(null, bersih, u);
+
+      maks++;
+      bersih.id = 'T' + ('0000' + maks).slice(-4);
+      bersih.status = STATUS.DRAFT;
+      bersih.dibuat_oleh = u.email;
+      bersih.dibuat_pada = waktu;
+      bersih.diajukan_pada = '';
+      bersih.diubah_pada = '';
+      bersih.diverifikasi_oleh = '';
+      bersih.diverifikasi_pada = '';
+      bersih.catatan_verifikasi = '';
+
+      barisBaru.push(kolom.map(function (k) { return bersih[k] === undefined ? '' : bersih[k]; }));
+      if (kunci) kunciBaru.push({ kunci: kunci, id: bersih.id });
+      hasil.push({ kunci: kunci, ok: true, id: bersih.id });
+    } catch (err) {
+      hasil.push({ kunci: kunci, ok: false, pesan: String(err && err.message ? err.message : err) });
+    }
+  });
+
+  if (barisBaru.length) {
+    s.getRange(s.getLastRow() + 1, 1, barisBaru.length, kolom.length).setValues(barisBaru);
+    // Kunci baru dicatat SETELAH penulisan berhasil. Bila setValues gagal,
+    // tidak ada kunci yang tertinggal menandai baris yang tidak pernah ada.
+    kunciBaru.forEach(function (k) { cache.put('idem_' + k.kunci, k.id, 21600); });
+    hapusCache();
+  }
+
+  var berhasil = hasil.filter(function (h) { return h.ok; }).length;
+  var gagal = hasil.length - berhasil;
+  catat(u, 'tambah-massal', 'Transaksi', '', berhasil + ' berhasil, ' + gagal + ' gagal');
+
+  return {
+    hasil: hasil, berhasil: berhasil, gagal: gagal,
+    pesan: berhasil + ' transaksi tersimpan sebagai draft' +
+           (gagal ? ', ' + gagal + ' gagal dan menunggu perbaikan.' : '.')
+  };
 }
 
 function aksiHapusTransaksi(d, u) {
