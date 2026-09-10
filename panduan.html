@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Panduan Pemakaian — SIKEU</title>
-<link rel="stylesheet" href="assets/style.css?v=20260910f">
+<link rel="stylesheet" href="assets/style.css?v=20260910g">
 <style>
   .panduan { display: grid; grid-template-columns: 230px 1fr; gap: 28px; align-items: start; }
   .daftar-isi { position: sticky; top: 78px; }
@@ -156,15 +156,20 @@
           <ol class="langkah">
             <li>Buka alamat aplikasi, klik tombol <b>Login dengan Google</b>.</li>
             <li>Pilih akun Google Anda — pakai <b>email kampus</b> bila punya.</li>
-            <li>Selesai. Sistem mengenali Anda dari akun itu.</li>
+            <li>Selesai — bila email Anda sudah didaftarkan Admin.</li>
           </ol>
 
           <p>Karena identitas datang langsung dari Google, <b>nama Anda tidak bisa dipalsukan</b>.
             Setiap entri tercatat atas nama pemilik akun yang sebenarnya — itulah yang membuat
             jejaknya bisa dipertanggungjawabkan saat asesmen.</p>
 
-          <p>Tidak ada sandi yang perlu diingat, dibagikan, atau direset. Kalau Anda bisa masuk
-            ke email kampus, Anda bisa masuk ke sini.</p>
+          <p>Tidak ada sandi yang perlu diingat, dibagikan, atau direset.</p>
+
+          <div class="pesan pesan-ingat">Bila muncul <b>“Akun Anda belum terdaftar”</b>, itu bukan
+            kerusakan. Artinya alamat email yang Anda pakai belum dimasukkan ke daftar pengguna.
+            Salin alamat yang tertera di layar itu dan kirimkan ke Wakil Dekan atau pengelola.
+            Sering kali penyebabnya sederhana: browser memakai akun pribadi, padahal yang
+            didaftarkan email kampus.</div>
         </div>
       </div>
 
@@ -202,9 +207,9 @@
             </table>
           </div>
 
-          <p style="margin-top:14px">Pemilik email berdomain kampus otomatis menjadi
-            <b>operator</b> saat pertama kali masuk, jadi dosen tidak perlu didaftarkan satu per
-            satu. Peran yang lebih tinggi diberikan Admin secara sengaja.</p>
+          <p style="margin-top:14px"><b>Hanya email yang sudah didaftarkan Admin yang dapat masuk.</b>
+            Siapa pun di luar daftar itu tetap bisa menekan tombol login, tetapi akan disambut
+            pemberitahuan bahwa akunnya belum terdaftar — tanpa melihat data apa pun.</p>
 
           <div class="pesan pesan-info"><b>Untuk Admin:</b> ada pengalih
             <i>“Lihat sebagai”</i> di pojok kanan atas untuk mencoba tampilan peran lain tanpa
@@ -484,9 +489,16 @@
           <p><b>Kelola Master → Pengguna.</b> Halaman ini <b>tidak menyimpan kata sandi</b> —
             hanya memetakan alamat email ke peran.</p>
 
-          <h3>Memberi seseorang akses lebih</h3>
+          <h3>Mendaftarkan orang baru</h3>
           <p>Klik <b>+ Tambah pengguna</b>, masukkan email Google-nya, pilih perannya. Tidak ada
             sandi yang perlu dibuat atau dikirim. Ia cukup masuk dengan akun Google miliknya.</p>
+
+          <div class="pesan pesan-info">Sistem ini memakai <b>daftar tertutup</b>: hanya email di
+            halaman ini yang dapat masuk. Orang yang belum terdaftar akan melihat pemberitahuan
+            berisi alamat emailnya sendiri, sehingga ia tahu persis apa yang harus disampaikan
+            kepada Anda.<br><br>Bila suatu saat Anda ingin dosen berdomain kampus mendaftar
+            sendiri sebagai operator, ubah parameter <code>pendaftaran_otomatis</code> menjadi
+            <code>ya</code> di Parameter Penilaian.</div>
 
           <h3>Mencabut akses</h3>
           <p><b>Nonaktifkan</b> lebih baik daripada menghapus, supaya jejak siapa menginput apa
@@ -629,8 +641,13 @@
                 <tr><td>Tombol Ubah tidak ada, tertulis “terkunci”</td>
                     <td>Entri sedang menunggu verifikasi atau sudah terverifikasi. Tarik kembali
                         ke draft, atau minta Wakil Dekan.</td></tr>
-                <tr><td>Masuk tapi tidak melihat apa pun</td>
-                    <td>Peran Anda masih <b>publik</b>. Minta Admin memberi peran.</td></tr>
+                <tr><td>“Akun Anda belum terdaftar”</td>
+                    <td>Emailnya belum ada di daftar pengguna. Kirimkan alamat yang tertera di
+                        layar itu kepada Admin. Periksa juga: mungkin browser memakai akun
+                        pribadi, bukan email kampus yang didaftarkan.</td></tr>
+                <tr><td>Sudah terdaftar tapi tidak bisa menginput</td>
+                    <td>Peran Anda <b>publik</b> — hanya boleh melihat. Minta Admin menaikkannya
+                        menjadi operator.</td></tr>
                 <tr><td>Penanda antrean tidak hilang-hilang</td>
                     <td>Ada entri yang ditolak server. Buka panel antrean, alasannya tertulis di
                         sana.</td></tr>
@@ -651,8 +668,8 @@
   </div>
 </div>
 
-<script src="config.js?v=20260910f"></script>
-<script src="assets/app.js?v=20260910f"></script>
+<script src="config.js?v=20260910g"></script>
+<script src="assets/app.js?v=20260910g"></script>
 <script>
 (function () {
   'use strict';

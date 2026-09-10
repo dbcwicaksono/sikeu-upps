@@ -81,6 +81,12 @@
       return u ? u.peran : 'publik';
     },
 
+    /** Apakah akun ini tercantum di M_Pengguna? */
+    terdaftar: function () {
+      var u = Auth.pengguna();
+      return !u || u.terdaftar !== false;
+    },
+
     boleh: function (peranMinimal) {
       return TINGKAT[Auth.peran()] >= TINGKAT[peranMinimal];
     },
@@ -183,6 +189,8 @@
       if (!j.ok) {
         var e2 = new Error(j.pesan || 'Terjadi kesalahan di server.');
         e2.perluMasuk = !!j.perluMasuk;
+        e2.belumTerdaftar = !!j.belumTerdaftar;
+        e2.email = j.email || '';
         if (j.perluMasuk) { buang(KUNCI_TOKEN); buang(KUNCI_PROFIL); Auth._pengguna = null; }
         throw e2;
       }
@@ -344,6 +352,47 @@
     selesaiMuat: function () {
       var el = document.getElementById('layar-muat');
       if (el) el.remove();
+    },
+
+    /**
+     * Layar untuk akun yang sudah masuk tetapi belum terdaftar.
+     *
+     * Tanpa ini, orang yang berhasil login lalu tidak melihat apa pun akan
+     * mengira sistemnya rusak. Yang perlu ia tahu justru sangat sederhana:
+     * alamat email mana yang harus didaftarkan, dan kepada siapa.
+     */
+    layarBelumTerdaftar: function (wadah, email) {
+      UI.selesaiMuat();
+      wadah.innerHTML =
+        '<div class="masuk-bungkus" style="max-width:460px"><div class="kartu">' +
+          '<div class="kartu-kepala"><h2 class="kartu-judul">Akun Anda belum terdaftar</h2></div>' +
+          '<div class="kartu-isi">' +
+            '<p style="margin:0 0 14px">Anda berhasil masuk sebagai:</p>' +
+            '<p style="margin:0 0 18px;padding:11px 14px;background:var(--biru-muda);' +
+              'border-radius:8px;font-weight:600;word-break:break-all">' + Fmt.aman(email) + '</p>' +
+            '<p style="margin:0 0 14px">Alamat itu belum tercantum sebagai pengguna sistem ini, ' +
+              'jadi belum ada data yang dapat ditampilkan kepada Anda.</p>' +
+            '<p style="margin:0 0 18px">Hubungi <b>Wakil Dekan</b> atau pengelola sistem, dan ' +
+              'sampaikan alamat email di atas untuk didaftarkan. Setelah terdaftar, cukup muat ' +
+              'ulang halaman ini.</p>' +
+            '<div style="display:flex;gap:9px;flex-wrap:wrap">' +
+              '<button id="tbl-coba-lagi" class="tombol-utama">Muat ulang</button>' +
+              '<button id="tbl-ganti-akun">Masuk dengan akun lain</button>' +
+              '<a class="tombol" href="panduan.html">Buka panduan</a>' +
+            '</div>' +
+            '<p class="catatan-kaki" style="margin-top:16px">Salah akun? Bila Anda punya email ' +
+              'kampus, kemungkinan itulah yang terdaftar — bukan akun pribadi yang sedang dipakai ' +
+              'browser ini.</p>' +
+          '</div>' +
+        '</div></div>';
+
+      var lagi = document.getElementById('tbl-coba-lagi');
+      if (lagi) lagi.addEventListener('click', function () { location.reload(); });
+      var ganti = document.getElementById('tbl-ganti-akun');
+      if (ganti) ganti.addEventListener('click', function () {
+        Auth.keluar();
+        location.reload();
+      });
     },
 
     /** Layar penuh "silakan masuk" untuk halaman yang menuntut identitas. */

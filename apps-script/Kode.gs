@@ -209,16 +209,16 @@ function domainKampus(email) {
 /**
  * Bolehkah pemilik email kampus mendaftar sendiri sebagai operator?
  *
- * Bila "tidak", hanya email yang sudah terdaftar di M_Pengguna yang mendapat
- * peran — selebihnya berperan publik dan tidak dapat menulis apa pun. Dipakai
- * bila jumlah pemilik email kampus terlalu besar untuk dipercaya begitu saja,
- * misalnya karena domainnya juga dipakai mahasiswa.
+ * Bawaannya TIDAK: hanya email yang sudah tercantum di M_Pengguna yang boleh
+ * masuk. Siapa pun di luar daftar itu ditolak dengan pemberitahuan yang jelas,
+ * sehingga tidak ada yang bisa menulis apa pun tanpa sepengetahuan pengelola.
  *
- * Bawaannya "ya" agar dosen tidak perlu didaftarkan satu per satu.
+ * Isi "ya" bila Anda ingin pemilik email berdomain kampus terdaftar sendiri
+ * sebagai operator saat pertama kali masuk.
  */
 function pendaftaranOtomatis() {
   var p = cariBaris('M_Parameter', 'kunci', 'pendaftaran_otomatis');
-  return !p || String(p.nilai).trim().toLowerCase() !== 'tidak';
+  return !!p && String(p.nilai).trim().toLowerCase() === 'ya';
 }
 
 /**
@@ -230,25 +230,31 @@ function kenaliPengguna(idToken, lihatSebagai) {
   if (!g) return null;
 
   var baris = cariBaris('M_Pengguna', 'email', g.email);
-  var peran;
+  var peran, terdaftar = true;
 
   if (baris) {
     if (!benar(baris.aktif)) throw new Error('Akun ' + g.email + ' dinonaktifkan. Hubungi Wakil Dekan.');
     peran = String(baris.peran).trim().toLowerCase();
     if (!TINGKAT.hasOwnProperty(peran)) peran = PERAN.PUBLIK;
   } else if (domainKampus(g.email) && pendaftaranOtomatis()) {
-    // Siapa pun berakun kampus boleh mengajukan draft; namanya terkunci ke email.
+    // Hanya bila pendaftaran otomatis sengaja dinyalakan.
     tambahBaris('M_Pengguna', {
       email: g.email, nama: g.nama, peran: PERAN.OPERATOR, aktif: true,
       dibuat_pada: sekarang(), terakhir_masuk: sekarang(), catatan: 'Terdaftar otomatis (domain kampus)'
     });
     peran = PERAN.OPERATOR;
   } else {
-    // Akun di luar kampus tidak dicatat, cukup dianggap publik.
+    // Tidak ada di M_Pengguna. Tidak dicatat, tidak diberi wewenang apa pun,
+    // dan ditandai supaya dapat diberi tahu dengan jelas alih-alih dibiarkan
+    // menghadapi halaman kosong tanpa penjelasan.
     peran = PERAN.PUBLIK;
+    terdaftar = false;
   }
 
-  var u = { email: g.email, nama: (baris && baris.nama) || g.nama, peranAsli: peran, peran: peran, menyamar: '' };
+  var u = {
+    email: g.email, nama: (baris && baris.nama) || g.nama,
+    peranAsli: peran, peran: peran, menyamar: '', terdaftar: terdaftar
+  };
 
   // Impersonasi: hanya admin, dan hanya untuk MENURUNKAN wewenang.
   if (lihatSebagai && peran === PERAN.ADMIN) {
@@ -339,7 +345,27 @@ function doPost(e) {
       if (TANPA_MASUK.indexOf(aksi) < 0 || !dashboardPublik()) {
         return balas({ ok: false, pesan: 'Silakan masuk dengan akun Google Anda.', perluMasuk: true });
       }
-      u = { email: '(publik)', nama: 'Publik', peran: PERAN.PUBLIK, peranAsli: PERAN.PUBLIK, menyamar: '' };
+      u = { email: '(publik)', nama: 'Publik', peran: PERAN.PUBLIK,
+            peranAsli: PERAN.PUBLIK, menyamar: '', terdaftar: true };
+    }
+
+    /*
+     * Sudah masuk tetapi tidak ada di M_Pengguna.
+     *
+     * Wewenangnya disamakan dengan pengunjung yang belum masuk sama sekali —
+     * tanpa penjagaan ini, siapa pun yang punya akun Google bisa membaca
+     * seluruh angka keuangan hanya dengan menekan tombol masuk. Aksi "saya"
+     * tetap diizinkan supaya halaman dapat menyapa dengan alasan penolakan
+     * yang jelas, bukan layar kosong.
+     */
+    if (!u.terdaftar && aksi !== 'saya') {
+      if (TANPA_MASUK.indexOf(aksi) < 0 || !dashboardPublik()) {
+        return balas({
+          ok: false, belumTerdaftar: true, email: u.email,
+          pesan: 'Akun ' + u.email + ' belum terdaftar pada sistem ini. ' +
+                 'Hubungi Wakil Dekan atau pengelola untuk didaftarkan.'
+        });
+      }
     }
 
     if (!bolehMinimal(u, IZIN[aksi])) {
@@ -408,7 +434,7 @@ function aksiSaya(u) {
 
   return {
     email: u.email, nama: u.nama, peran: u.peran,
-    peran_asli: u.peranAsli, menyamar: u.menyamar,
+    peran_asli: u.peranAsli, menyamar: u.menyamar, terdaftar: u.terdaftar !== false,
     peran_tersedia: u.peranAsli === PERAN.ADMIN
       ? [PERAN.ADMIN, PERAN.VERIFIKATOR, PERAN.OPERATOR, PERAN.PUBLIK] : []
   };

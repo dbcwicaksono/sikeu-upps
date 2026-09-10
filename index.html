@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Dashboard Keuangan UPPS — SIKEU</title>
-<link rel="stylesheet" href="assets/style.css?v=20260910f">
+<link rel="stylesheet" href="assets/style.css?v=20260910g">
 </head>
 <body>
 
@@ -134,8 +134,8 @@ setTimeout(function () {
 }, 20000);
 </script>
 
-<script src="config.js?v=20260910f"></script>
-<script src="assets/app.js?v=20260910f"></script>
+<script src="config.js?v=20260910g"></script>
+<script src="assets/app.js?v=20260910g"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script>
 (function () {
@@ -187,7 +187,10 @@ setTimeout(function () {
       S.UI.selesaiMuat();
       document.getElementById('sub-judul').textContent = '';
       document.getElementById('isi').hidden = true;
-      if (err.perluMasuk) {
+      if (err.belumTerdaftar || (Auth.masuk_p() && !Auth.terdaftar())) {
+        S.UI.layarBelumTerdaftar(document.getElementById('wadah'),
+          err.email || (Auth.pengguna() || {}).email || '');
+      } else if (err.perluMasuk) {
         S.UI.layarMasuk(document.getElementById('wadah'), 'Dashboard Keuangan',
           'Angka keuangan hanya ditampilkan kepada pengguna terdaftar. ' +
           'Masuk dengan akun Google Anda untuk melanjutkan.');

@@ -129,9 +129,13 @@ berkas itu → **Ganti lembar saat ini**, pemisah **koma**. Lalu jalankan menu
 | Kelola master | ✓ | — | — | — |
 | Kelola pengguna | ✓ | — | — | — |
 
-Pemilik email berdomain kampus yang belum terdaftar **otomatis menjadi operator** saat
-pertama kali masuk, sehingga dosen tidak perlu didaftarkan satu per satu — tetapi setiap
-entri tetap terkunci ke email yang benar-benar ia miliki.
+**Hanya email yang tercantum di `M_Pengguna` yang dapat masuk.** Siapa pun di luar daftar
+itu disambut pemberitahuan bahwa akunnya belum terdaftar, berisi alamat emailnya sendiri —
+tanpa melihat data apa pun. Setiap entri tetap terkunci ke email yang benar-benar dimiliki
+penginputnya.
+
+Bila suatu saat ingin dosen berdomain kampus mendaftar sendiri sebagai operator, ubah
+parameter `pendaftaran_otomatis` menjadi `ya`.
 
 Admin punya pengalih **"Lihat sebagai"** untuk menguji seluruh alur dari satu akun.
 Impersonasi hanya dapat **menurunkan** wewenang, tidak pernah menaikkannya.
