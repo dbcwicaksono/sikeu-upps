@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Panduan Pemakaian — SIKEU</title>
+<link rel="stylesheet" href="assets/style.css?v=20260910e">
+<style>
+  .panduan { display: grid; grid-template-columns: 230px 1fr; gap: 28px; align-items: start; }
+  .daftar-isi { position: sticky; top: 78px; }
+  .daftar-isi a {
+    display: block; padding: 7px 11px; border-radius: 7px; text-decoration: none;
+    color: var(--teks-lemah); font-size: 13px; border-left: 2px solid transparent;
+  }
+  .daftar-isi a:hover { background: var(--biru-muda); color: var(--biru); }
+  .daftar-isi .kelompok {
+    font-size: 11px; text-transform: uppercase; letter-spacing: .5px;
+    color: var(--teks-lemah); font-weight: 700; margin: 16px 0 6px 11px;
+  }
+  .bab { scroll-margin-top: 80px; }
+  .bab h2 { font-size: 19px; margin: 0 0 4px; letter-spacing: -.2px; }
+  .bab > p:first-of-type { color: var(--teks-lemah); margin-top: 0; }
+  .bab h3 { font-size: 15px; margin: 22px 0 8px; }
+  .langkah { counter-reset: langkah; list-style: none; padding: 0; margin: 12px 0; }
+  .langkah li {
+    counter-increment: langkah; position: relative; padding: 0 0 12px 38px; line-height: 1.6;
+  }
+  .langkah li::before {
+    content: counter(langkah); position: absolute; left: 0; top: 0;
+    width: 24px; height: 24px; border-radius: 50%; background: var(--biru); color: #fff;
+    font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center;
+  }
+  .kotak-peran {
+    display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 11.5px;
+    font-weight: 600; margin-right: 6px;
+  }
+  .alur-status { font-family: var(--mono); font-size: 12px; line-height: 1.9; white-space: pre;
+    background: #f4f6fa; padding: 14px 16px; border-radius: 8px; overflow-x: auto; }
+  @media (max-width: 820px) {
+    .panduan { grid-template-columns: 1fr; }
+    .daftar-isi { position: static; }
+  }
+</style>
+</head>
+<body>
+
+<header class="kepala kerangka">
+  <div class="kepala-isi">
+    <div class="merek">SIKEU-UPPS<small>Sistem Informasi Keuangan untuk Tabel 12 &amp; Tabel 13 Akreditasi</small></div>
+    <nav class="nav"></nav>
+  </div>
+</header>
+
+<div class="wadah">
+  <h1 class="judul-halaman">Panduan Pemakaian</h1>
+  <p class="sub-halaman">Ditulis untuk dibaca siapa saja, termasuk yang baru pertama kali membukanya —
+    dan untuk siapa pun yang kelak meneruskan pengelolaan sistem ini.</p>
+
+  <div class="panduan">
+    <nav class="daftar-isi">
+      <div class="kelompok">Dasar</div>
+      <a href="#apa">Apa ini sebenarnya</a>
+      <a href="#masuk">Cara masuk</a>
+      <a href="#peran">Empat peran</a>
+      <a href="#alur">Perjalanan satu data</a>
+
+      <div class="kelompok">Sehari-hari</div>
+      <a href="#operator">Menginput transaksi</a>
+      <a href="#antrean">Antrean kirim</a>
+      <a href="#verifikator">Memverifikasi</a>
+      <a href="#borang">Membaca Tabel 12 &amp; 13</a>
+
+      <div class="kelompok">Pengelolaan</div>
+      <a href="#jenisdana">Jenis dana &amp; penggabungan</a>
+      <a href="#tahun">Tahun dan label TS</a>
+      <a href="#parameter">Parameter skor</a>
+      <a href="#pengguna">Pengguna dan akses</a>
+
+      <div class="kelompok">Untuk penerus</div>
+      <a href="#arsitektur">Bagaimana ini dirakit</a>
+      <a href="#jangan">Yang jangan diubah</a>
+      <a href="#pulih">Kalau ada yang rusak</a>
+      <a href="#masalah">Masalah yang sering muncul</a>
+    </nav>
+
+    <div>
+
+      <!-- ============================================================ dasar -->
+      <div class="kartu bab" id="apa">
+        <div class="kartu-isi">
+          <h2>Apa ini sebenarnya</h2>
+          <p>Satu tempat mencatat uang yang masuk dan keluar di fakultas, yang otomatis
+            menyusun <b>Tabel 12</b> dan <b>Tabel 13</b> borang akreditasi.</p>
+
+          <p>Kuncinya ada di satu gagasan sederhana: <b>setiap transaksi mencatat dua hal
+            sekaligus</b> — dari mana uangnya datang, dan untuk apa dipakai.</p>
+
+          <ul>
+            <li><b>Dari mana</b> → menyusun Tabel 12 (Penerimaan Dana)</li>
+            <li><b>Untuk apa</b> → menyusun Tabel 13 (Penggunaan Dana)</li>
+          </ul>
+
+          <p>Karena keduanya berasal dari catatan yang sama, total kedua tabel itu
+            <b>selalu sama persis</b>. Anda tidak perlu mengisi dua tabel terpisah, dan tidak
+            mungkin keduanya berbeda karena salah ketik.</p>
+
+          <div class="pesan pesan-info">Anda tidak pernah mengetik langsung ke Tabel 12 atau
+            Tabel 13. Keduanya dihitung ulang setiap kali dashboard dibuka.</div>
+        </div>
+      </div>
+
+      <div class="kartu bab" id="masuk">
+        <div class="kartu-isi">
+          <h2>Cara masuk</h2>
+          <p>Tidak ada kata sandi untuk sistem ini. Sama sekali.</p>
+
+          <ol class="langkah">
+            <li>Buka alamat aplikasi, klik tombol <b>Login dengan Google</b>.</li>
+            <li>Pilih akun Google Anda — pakai <b>email kampus</b> bila punya.</li>
+            <li>Selesai. Sistem mengenali Anda dari akun itu.</li>
+          </ol>
+
+          <p>Karena identitas datang langsung dari Google, <b>nama Anda tidak bisa dipalsukan</b>.
+            Setiap entri tercatat atas nama pemilik akun yang sebenarnya — itulah yang membuat
+            jejaknya bisa dipertanggungjawabkan saat asesmen.</p>
+
+          <p>Tidak ada sandi yang perlu diingat, dibagikan, atau direset. Kalau Anda bisa masuk
+            ke email kampus, Anda bisa masuk ke sini.</p>
+        </div>
+      </div>
+
+      <div class="kartu bab" id="peran">
+        <div class="kartu-isi">
+          <h2>Empat peran</h2>
+          <p>Apa yang bisa Anda lakukan ditentukan peran Anda. Peran tampil di pojok kanan atas.</p>
+
+          <div class="bungkus-tabel">
+            <table class="data">
+              <thead><tr><th>Peran</th><th>Siapa</th><th>Bisa apa</th></tr></thead>
+              <tbody>
+                <tr>
+                  <td><span class="kotak-peran lencana-jingga">Operator</span></td>
+                  <td>Dosen dan staf</td>
+                  <td>Menambah transaksi, serta mengubah dan menghapus entrinya sendiri
+                      selama belum diverifikasi</td>
+                </tr>
+                <tr>
+                  <td><span class="kotak-peran lencana-hijau">Verifikator</span></td>
+                  <td>Wakil Dekan</td>
+                  <td>Semua di atas, ditambah memeriksa, menyetujui, dan menolak seluruh data</td>
+                </tr>
+                <tr>
+                  <td><span class="kotak-peran lencana-biru">Admin</span></td>
+                  <td>Pengelola sistem</td>
+                  <td>Semua di atas, ditambah mengatur kategori, tahun, parameter, dan pengguna</td>
+                </tr>
+                <tr>
+                  <td><span class="kotak-peran lencana-abu">Publik</span></td>
+                  <td>Selain di atas</td>
+                  <td>Tidak melihat apa pun sampai diberi peran</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <p style="margin-top:14px">Pemilik email berdomain kampus otomatis menjadi
+            <b>operator</b> saat pertama kali masuk, jadi dosen tidak perlu didaftarkan satu per
+            satu. Peran yang lebih tinggi diberikan Admin secara sengaja.</p>
+
+          <div class="pesan pesan-info"><b>Untuk Admin:</b> ada pengalih
+            <i>“Lihat sebagai”</i> di pojok kanan atas untuk mencoba tampilan peran lain tanpa
+            berganti akun. Berguna untuk memahami apa yang dilihat dosen. Pengalih ini hanya bisa
+            <b>menurunkan</b> wewenang, tidak pernah menaikkan.</div>
+        </div>
+      </div>
+
+      <div class="kartu bab" id="alur">
+        <div class="kartu-isi">
+          <h2>Perjalanan satu data</h2>
+          <p>Setiap transaksi melewati tahapan berikut. Memahami ini menjelaskan hampir semua
+            pertanyaan “kenapa angkanya belum muncul”.</p>
+
+          <div class="alur-status">draft ──ajukan──► diajukan ──setujui──► terverifikasi
+  ▲                   │                        │
+  │                   └──tolak──► ditolak      │ bila disunting
+  └──────── perbaiki ─────────────┘            ▼
+                                           diajukan</div>
+
+          <div class="bungkus-tabel" style="margin-top:14px">
+            <table class="data">
+              <thead><tr><th>Status</th><th>Artinya</th><th>Masuk borang?</th></tr></thead>
+              <tbody>
+                <tr><td>Draft</td><td>Baru diketik, masih milik Anda sepenuhnya</td>
+                    <td><b>Tidak</b></td></tr>
+                <tr><td>Menunggu Verifikasi</td><td>Sudah diajukan, menunggu diperiksa</td>
+                    <td><b>Tidak</b></td></tr>
+                <tr><td>Terverifikasi</td><td>Sudah disetujui Wakil Dekan</td>
+                    <td><b>Ya</b></td></tr>
+                <tr><td>Ditolak</td><td>Ada yang perlu diperbaiki, alasannya tertulis</td>
+                    <td><b>Tidak</b></td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="pesan pesan-ingat" style="margin-top:14px">Inilah aturan terpentingnya:
+            <b>hanya data terverifikasi yang masuk Tabel 12 dan Tabel 13.</b> Salah ketik pada
+            draft tidak akan pernah merusak angka borang. Karena itu jangan ragu menyimpan
+            sesuatu yang belum yakin — justru begitulah cara memakainya.</div>
+
+          <p>Dan bila data yang sudah terverifikasi disunting, statusnya <b>otomatis turun</b>
+            kembali ke menunggu verifikasi. Angka borang tidak pernah berubah tanpa ada yang
+            meninjau ulang.</p>
+        </div>
+      </div>
+
+      <!-- ======================================================== sehari-hari -->
+      <div class="kartu bab" id="operator">
+        <div class="kartu-isi">
+          <h2>Menginput transaksi</h2>
+          <p>Halaman <b>Input Data</b> → tombol <b>+ Tambah transaksi</b>.</p>
+
+          <h3>Arti tiap kolom</h3>
+          <div class="bungkus-tabel">
+            <table class="data">
+              <thead><tr><th>Kolom</th><th>Isi dengan</th></tr></thead>
+              <tbody>
+                <tr><td><b>Tanggal</b></td>
+                    <td>Tanggal transaksi. Tahun anggaran diambil otomatis dari sini.</td></tr>
+                <tr><td><b>Sumber dana</b></td>
+                    <td>Dari mana uangnya. Empat pilihan tetap sesuai borang.</td></tr>
+                <tr><td><b>Jenis dana</b></td>
+                    <td>Rincian sumbernya, mis. DIPA, Kerjasama, Hibah. Pilihannya menyesuaikan
+                        sumber dana yang dipilih.</td></tr>
+                <tr><td><b>Rincian</b></td>
+                    <td>Opsional. Hanya muncul bila jenis dana punya daftar rincian. Boleh
+                        dilewati — tidak mempengaruhi borang.</td></tr>
+                <tr><td><b>Jenis penggunaan</b></td>
+                    <td>Untuk apa uangnya. Tujuh pilihan tetap, inilah baris Tabel 13.</td></tr>
+                <tr><td><b>Skema</b></td>
+                    <td>Mandiri atau Kerjasama.</td></tr>
+                <tr><td><b>Jumlah dana</b></td>
+                    <td>Nominal penuh dalam rupiah, mis. <code>24750000</code>. Titik ribuan
+                        muncul sendiri, dan nilainya ditampilkan juga dalam juta supaya mudah
+                        dicocokkan dengan borang.</td></tr>
+                <tr><td><b>Uraian</b></td>
+                    <td>Judul kegiatan atau keterangan. Inilah yang dicari saat menelusuri data,
+                        jadi tulis sejelas mungkin.</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h3>Setelah tersimpan</h3>
+          <p>Entri masuk sebagai <b>draft</b>. Kumpulkan sebanyak yang perlu, periksa ulang,
+            lalu centang semuanya dan klik <b>Ajukan untuk verifikasi</b>. Belum yakin? Biarkan
+            saja sebagai draft — tidak ada batas waktu, dan draft tidak mengganggu apa pun.</p>
+
+          <h3>Kalau ditolak</h3>
+          <p>Alasannya tampil dengan tulisan merah di baris itu. Perbaiki lewat tombol
+            <b>Ubah</b>; begitu disimpan, entri kembali menjadi draft dan bisa diajukan lagi.</p>
+        </div>
+      </div>
+
+      <div class="kartu bab" id="antrean">
+        <div class="kartu-isi">
+          <h2>Antrean kirim</h2>
+          <p>Saat menekan Simpan, formulir langsung tertutup dan Anda bisa lanjut mengetik entri
+            berikutnya tanpa menunggu. Entri tadi masuk <b>antrean</b>, lalu dikirim sendiri ke
+            server beberapa detik kemudian, digabung menjadi satu pengiriman.</p>
+
+          <p>Ini disengaja: server menyimpan data dalam hitungan detik per panggilan, jadi
+            mengirim satu per satu membuat pengisian terasa lambat sekali. Menunda sebentar dan
+            menggabungkannya membuat mengetik terasa seketika.</p>
+
+          <h3>Membaca penandanya</h3>
+          <ul>
+            <li><b>“3 menunggu kirim”</b> — masih di komputer Anda, sebentar lagi terkirim.</li>
+            <li><b>“Mengirim…”</b> — sedang dalam perjalanan.</li>
+            <li><b>Penanda hilang</b> — semuanya sudah aman di server.</li>
+            <li><b>“2 perlu diperbaiki”</b> — ada yang ditolak server, alasannya tertulis di panel.</li>
+          </ul>
+
+          <div class="pesan pesan-ingat"><b>Jangan tutup halaman selagi penanda antrean masih
+            terlihat.</b> Selama masih di antrean, entri hanya ada di komputer ini. Browser akan
+            memperingatkan Anda kalau nekat menutupnya. Kalau halaman telanjur tertutup, entri
+            biasanya masih tersimpan dan dikirim otomatis saat Anda membuka halaman itu lagi
+            di komputer dan browser yang sama.</div>
+
+          <p>Bila internet putus, entri tetap menunggu di antrean dan dicoba lagi otomatis —
+            justru di situlah antrean ini berguna.</p>
+        </div>
+      </div>
+
+      <div class="kartu bab" id="verifikator">
+        <div class="kartu-isi">
+          <h2>Memverifikasi <span class="kotak-peran lencana-hijau">Verifikator</span></h2>
+          <p>Inilah satu-satunya pintu masuk data ke angka borang. Sebelum Anda menyetujui,
+            tidak ada yang berubah.</p>
+
+          <ol class="langkah">
+            <li>Buka <b>Input Data</b>, pada saringan <b>Status</b> pilih
+                <b>Menunggu Verifikasi</b>, klik <b>Terapkan</b>.</li>
+            <li>Periksa tiap barisnya — terutama nominal, tahun, dan jenis penggunaannya.</li>
+            <li>Centang yang sudah benar, klik <b>Verifikasi</b>. Angkanya langsung masuk borang.</li>
+            <li>Yang bermasalah: centang, klik <b>Tolak…</b>, lalu tulis alasannya.</li>
+          </ol>
+
+          <p><b>Alasan penolakan wajib diisi.</b> Sistem menolak penolakan tanpa alasan, karena
+            operator perlu tahu apa yang harus diperbaiki — bukan sekadar tahu bahwa ia salah.</p>
+
+          <h3>Kalau ada yang telanjur disetujui</h3>
+          <p>Centang barisnya, klik <b>Batalkan verifikasi</b>. Statusnya kembali menunggu, dan
+            angkanya keluar lagi dari borang.</p>
+
+          <h3>Melihat dampak sebelum menyetujui</h3>
+          <p>Di dashboard, ubah <b>Data yang dihitung</b> menjadi
+            <i>Termasuk yang diajukan</i>. Tabelnya menghitung sementara semua yang mengantre,
+            sehingga Anda bisa melihat pengaruhnya terhadap skor sebelum memutuskan.
+            <b>Kembalikan ke “Hanya yang terverifikasi” sebelum mencetak borang.</b></p>
+        </div>
+      </div>
+
+      <div class="kartu bab" id="borang">
+        <div class="kartu-isi">
+          <h2>Membaca Tabel 12 &amp; 13</h2>
+          <p>Dashboard menyusun keduanya persis dalam bentuk borang, siap disalin.</p>
+
+          <p>Tombol <b>Unduh Excel</b> pada tiap tabel menghasilkan berkas yang bisa langsung
+            ditempel ke naskah borang. Tombol <b>Cetak / simpan PDF</b> menyusun ulang halaman
+            tanpa menu dan tombol — hanya tabel dan kartu skor.</p>
+
+          <h3>Kartu skor butir 5.1</h3>
+          <p>Lima kartu di atas tabel menghitung skor akreditasi langsung dari data Anda,
+            memakai rumus pada lembar penilaian. Tiap kartu menampilkan angka dasarnya sekaligus
+            rumus yang dipakai, jadi bisa ditelusuri asalnya.</p>
+
+          <p>Warna garis di tepi kiri kartu: hijau berarti aman, jingga berarti perlu perhatian,
+            merah berarti jauh dari target.</p>
+
+          <h3>Periode</h3>
+          <p>Pilihan <b>Periode</b> menentukan tiga tahun yang dihitung. <i>Jendela akreditasi</i>
+            memakai tahun bertanda TS-2, TS-1, dan TS. Pilihan lain berguna untuk membandingkan
+            periode sebelumnya.</p>
+
+          <div class="pesan pesan-info">Angka di kedua tabel selalu dibulatkan ke dua desimal
+            juta rupiah dengan cara yang menjamin kolomnya benar-benar menjumlah bila asesor
+            menghitungnya sendiri — dan menjamin total Tabel 12 selalu sama dengan total Tabel 13.</div>
+        </div>
+      </div>
+
+      <!-- ========================================================= pengelolaan -->
+      <div class="kartu bab" id="jenisdana">
+        <div class="kartu-isi">
+          <h2>Jenis dana &amp; penggabungan <span class="kotak-peran lencana-biru">Admin</span></h2>
+          <p><b>Kelola Master → Jenis Dana.</b> Inilah satu-satunya bagian Tabel 12 yang bebas
+            Anda atur. Sumber dananya sendiri tetap empat, sesuai borang.</p>
+
+          <h3>Menambah</h3>
+          <p>Klik <b>+ Tambah jenis dana</b>, pilih sumber dananya, beri nama. Langsung tersedia
+            di formulir input.</p>
+
+          <h3>Tidak dipakai lagi</h3>
+          <p><b>Nonaktifkan</b>, jangan dihapus. Kategori nonaktif hilang dari formulir input
+            tetapi riwayat transaksinya tetap utuh dan tetap terhitung di borang. Menghapus
+            kategori yang sudah dipakai memang ditolak sistem, justru untuk mencegah riwayat rusak.</p>
+
+          <h3>Ternyata dua kategori sama artinya</h3>
+          <p>Misalnya “Hibah Dikti” dan “Hibah Kemdikbud” ternyata hal yang sama. Klik
+            <b>Gabungkan…</b> pada salah satunya, pilih tujuannya.</p>
+
+          <p>Setelah digabung, keduanya tampil sebagai <b>satu baris</b> di Tabel 12. Yang penting
+            dipahami: <b>tidak ada satu pun data transaksi yang diubah</b>. Setiap baris tetap
+            menyimpan kategori aslinya — hanya cara pelaporannya yang dialihkan. Karena itu
+            penggabungan bisa dilepas kapan saja lewat <b>Lepas gabungan</b>, dan semuanya
+            kembali seperti semula.</p>
+
+          <p>Hanya kategori pada sumber dana yang sama yang bisa digabungkan, karena sumber
+            dana menentukan baris borangnya.</p>
+
+          <h3>Rincian</h3>
+          <p>Lapis tambahan di bawah jenis dana, sifatnya opsional — misalnya memecah PNBP
+            mahasiswa menjadi SPP dan SPI tiap prodi. <b>Tidak mengubah Tabel 12 maupun 13</b>,
+            hanya menambah kedalaman saat menelusuri asal angka.</p>
+        </div>
+      </div>
+
+      <div class="kartu bab" id="tahun">
+        <div class="kartu-isi">
+          <h2>Tahun dan label TS <span class="kotak-peran lencana-biru">Admin</span></h2>
+          <p><b>Kelola Master → Tahun.</b></p>
+
+          <p>Label <b>TS</b> menandai tahun terkini yang dinilai, <b>TS-1</b> dan <b>TS-2</b> dua
+            tahun sebelumnya. Ketiganya itulah yang dipakai dashboard sebagai jendela akreditasi.</p>
+
+          <h3>Saat tahun berganti</h3>
+          <ol class="langkah">
+            <li>Tambahkan tahun baru bila belum ada.</li>
+            <li>Pindahkan label <b>TS</b> ke tahun baru itu.</li>
+            <li>Geser <b>TS-1</b> dan <b>TS-2</b> mengikuti.</li>
+          </ol>
+
+          <p>Satu label hanya boleh dipakai satu tahun — memberikannya ke tahun lain otomatis
+            melepasnya dari tahun sebelumnya.</p>
+
+          <div class="pesan pesan-ingat"><b>Sering terlewat:</b> transaksi bertanggal di tahun
+            yang belum terdaftar akan ditolak saat disimpan. Kalau ada yang melapor
+            <i>“Tahun 2026 belum terdaftar”</i>, di sinilah tempat menambahkannya.</div>
+        </div>
+      </div>
+
+      <div class="kartu bab" id="parameter">
+        <div class="kartu-isi">
+          <h2>Parameter skor <span class="kotak-peran lencana-biru">Admin</span></h2>
+          <p><b>Kelola Master → Parameter Penilaian.</b> Angka-angka ini menjadi penyebut
+            perhitungan skor, jadi salah isi di sini membuat skor salah tanpa gejala lain.</p>
+
+          <div class="bungkus-tabel">
+            <table class="data">
+              <thead><tr><th>Parameter</th><th>Pengaruhnya</th></tr></thead>
+              <tbody>
+                <tr><td><code>jumlah_dosen</code></td>
+                    <td>Penyebut skor dana penelitian dan pengabdian per dosen</td></tr>
+                <tr><td><code>jumlah_mahasiswa</code></td>
+                    <td>Penyebut skor dana operasional per mahasiswa</td></tr>
+                <tr><td><code>jenis_pt</code></td>
+                    <td>PTN atau PTS — menentukan rumus butir 5.1.1</td></tr>
+                <tr><td><code>nama_upps</code></td>
+                    <td>Nama unit yang tampil di dashboard dan cetakan</td></tr>
+                <tr><td><code>sumber_operator</code></td>
+                    <td>Sumber dana yang boleh diinput operator. Isi <code>*</code> untuk semua</td></tr>
+                <tr><td><code>dashboard_publik</code></td>
+                    <td>Isi <code>ya</code> bila dashboard boleh dilihat tanpa login</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <p style="margin-top:14px">Perbarui jumlah dosen dan mahasiswa setiap awal tahun
+            akademik. Ini pekerjaan lima detik yang mudah terlupakan, padahal langsung
+            menggeser skor.</p>
+        </div>
+      </div>
+
+      <div class="kartu bab" id="pengguna">
+        <div class="kartu-isi">
+          <h2>Pengguna dan akses <span class="kotak-peran lencana-biru">Admin</span></h2>
+          <p><b>Kelola Master → Pengguna.</b> Halaman ini <b>tidak menyimpan kata sandi</b> —
+            hanya memetakan alamat email ke peran.</p>
+
+          <h3>Memberi seseorang akses lebih</h3>
+          <p>Klik <b>+ Tambah pengguna</b>, masukkan email Google-nya, pilih perannya. Tidak ada
+            sandi yang perlu dibuat atau dikirim. Ia cukup masuk dengan akun Google miliknya.</p>
+
+          <h3>Mencabut akses</h3>
+          <p><b>Nonaktifkan</b> lebih baik daripada menghapus, supaya jejak siapa menginput apa
+            tetap utuh. Pengguna yang masih punya transaksi memang tidak bisa dihapus.</p>
+
+          <p>Sistem juga menolak menurunkan atau menonaktifkan <b>admin terakhir</b> — agar
+            tidak ada yang tidak sengaja mengunci dirinya sendiri.</p>
+
+          <h3>Riwayat aktivitas</h3>
+          <p>Tab <b>Riwayat Aktivitas</b> mencatat siapa melakukan apa dan kapan. Berguna saat
+            asesmen lapangan, dan saat menelusuri “siapa yang mengubah angka ini”.</p>
+        </div>
+      </div>
+
+      <!-- ======================================================= untuk penerus -->
+      <div class="kartu bab" id="arsitektur">
+        <div class="kartu-isi">
+          <h2>Bagaimana ini dirakit</h2>
+          <p>Bagian ini untuk siapa pun yang kelak meneruskan pengelolaan teknisnya.</p>
+
+          <p>Tiga bagian, semuanya gratis:</p>
+          <ul>
+            <li><b>Halaman web</b> — berkas statis di GitHub Pages. Tidak menyimpan data apa pun.</li>
+            <li><b>Google Apps Script</b> — jembatan yang memeriksa identitas dan wewenang, lalu
+              membaca-menulis spreadsheet. Berjalan atas nama pemilik skrip.</li>
+            <li><b>Google Spreadsheet</b> — tempat seluruh data sesungguhnya berada.</li>
+          </ul>
+
+          <p>Browser <b>tidak pernah menyentuh spreadsheet</b>. Ia hanya bicara ke Apps Script.
+            Karena itu spreadsheet tetap privat dan dosen tidak perlu diberi izin edit —
+            sehingga tidak ada yang bisa melewati pemeriksaan dengan menyunting sheet langsung.</p>
+
+          <h3>Di mana letak apa</h3>
+          <div class="bungkus-tabel">
+            <table class="data">
+              <thead><tr><th>Kalau ingin mengubah…</th><th>Bukanya di…</th></tr></thead>
+              <tbody>
+                <tr><td>Tampilan dan perilaku halaman</td>
+                    <td>Repositori GitHub — <code>index.html</code>, <code>input.html</code>,
+                        <code>master.html</code>, <code>assets/</code></td></tr>
+                <tr><td>Aturan wewenang, validasi, perhitungan di server</td>
+                    <td>Apps Script — <code>Kode.gs</code></td></tr>
+                <tr><td>Struktur sheet dan isian awal</td>
+                    <td>Apps Script — <code>Setup.gs</code></td></tr>
+                <tr><td>Rumus Tabel 12/13 dan skor</td>
+                    <td>Repositori — <code>assets/app.js</code>, bagian <code>Hitung</code></td></tr>
+                <tr><td>Alamat API dan Client ID</td>
+                    <td>Repositori — <code>config.js</code></td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="pesan pesan-ingat" style="margin-top:14px"><b>Menekan Save di editor Apps
+            Script tidak mengubah apa pun yang dilayani aplikasi.</b> Deployment adalah potret
+            beku. Setelah menyunting kode, buka <b>Deploy → Manage deployments</b>, klik ikon
+            pensil, pilih <b>New version</b>, lalu <b>Deploy</b>. Alamatnya tetap sama.</div>
+
+          <p>Untuk halaman web, setiap perubahan berkas di <code>assets/</code> harus diikuti
+            menaikkan nomor <code>?v=</code> pada rujukannya di ketiga halaman HTML. Tanpa itu,
+            browser bisa memakai berkas lama sampai sepuluh menit dan tercampur dengan HTML baru.</p>
+        </div>
+      </div>
+
+      <div class="kartu bab" id="jangan">
+        <div class="kartu-isi">
+          <h2>Yang jangan diubah</h2>
+          <p>Beberapa hal sengaja dikunci. Mengubahnya membuat borang tidak lagi sesuai format,
+            atau membuka lubang keamanan.</p>
+
+          <div class="bungkus-tabel">
+            <table class="data">
+              <thead><tr><th>Jangan</th><th>Sebab</th></tr></thead>
+              <tbody>
+                <tr><td>Menambah atau mengurangi <b>sumber dana</b></td>
+                    <td>Empat baris Tabel 12 ditentukan format borang</td></tr>
+                <tr><td>Menambah atau mengurangi <b>jenis penggunaan</b></td>
+                    <td>Tujuh baris Tabel 13 ditentukan format borang</td></tr>
+                <tr><td>Menyunting sheet <code>Transaksi</code> langsung</td>
+                    <td>Melewati seluruh validasi dan jejak audit</td></tr>
+                <tr><td>Membagikan spreadsheet ke pengguna</td>
+                    <td>Mereka bisa menyunting data tanpa melewati pemeriksaan apa pun</td></tr>
+                <tr><td>Menambahkan scope <code>/auth/drive</code> di Apps Script</td>
+                    <td>Itu restricted scope — memunculkan layar “unverified app” bagi semua
+                        pengguna</td></tr>
+                <tr><td>Menulis alamat email di dalam kode</td>
+                    <td>Repositorinya publik; email di sana akan dipanen pengumpul spam</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="kartu bab" id="pulih">
+        <div class="kartu-isi">
+          <h2>Kalau ada yang rusak</h2>
+
+          <h3>Langkah pertama, selalu</h3>
+          <p>Di spreadsheet, menu <b>SIKEU → Periksa data</b>. Fungsi ini memeriksa header setiap
+            sheet, acuan yang menggantung, siklus penggabungan, dan nilai janggal — lalu
+            menyebutkan masalahnya dengan bahasa manusia.</p>
+
+          <h3>Sheet terhapus atau tertimpa</h3>
+          <p>Menu <b>SIKEU → Siapkan spreadsheet</b>. Aman dijalankan berulang kali: hanya
+            membuat sheet yang hilang dan mengisi yang masih kosong, tidak menyentuh data yang
+            sudah ada.</p>
+
+          <h3>Data mendarat di tab yang salah</h3>
+          <p>Ini terjadi bila mengimpor CSV dengan pilihan <i>Ganti lembar saat ini</i> sementara
+            tab lain sedang aktif. Hapus tab yang tertimpa, klik tab tujuan lebih dulu, impor
+            ulang, lalu jalankan <b>Siapkan spreadsheet</b>.</p>
+
+          <h3>Kehilangan akses admin</h3>
+          <p>Buka spreadsheet langsung sebagai pemiliknya, cari sheet <code>M_Pengguna</code>,
+            tambahkan satu baris: email Anda, nama, <code>admin</code>, <code>TRUE</code>.</p>
+
+          <h3>Angka borang terasa keliru</h3>
+          <p>Periksa berurutan: apakah statusnya sudah <b>terverifikasi</b>; apakah <b>periode</b>
+            di dashboard sudah benar; apakah label <b>TS</b> menunjuk tahun yang tepat; apakah
+            <b>jumlah dosen dan mahasiswa</b> di Parameter masih mutakhir.</p>
+        </div>
+      </div>
+
+      <div class="kartu bab" id="masalah">
+        <div class="kartu-isi">
+          <h2>Masalah yang sering muncul</h2>
+
+          <div class="bungkus-tabel">
+            <table class="data">
+              <thead><tr><th>Gejala</th><th>Sebabnya biasanya</th></tr></thead>
+              <tbody>
+                <tr><td>Halaman lama sekali memuat saat pertama dibuka</td>
+                    <td>Wajar. Apps Script perlu beberapa detik bangun dari mode tidur pada
+                        panggilan pertama. Berikutnya jauh lebih cepat.</td></tr>
+                <tr><td>Tampilan aneh, atau memuat tanpa henti</td>
+                    <td>Browser memakai berkas versi lama. Tekan <b>Ctrl+Shift+R</b>.</td></tr>
+                <tr><td>“Tahun 2026 belum terdaftar”</td>
+                    <td>Tambahkan tahunnya di <b>Kelola Master → Tahun</b>.</td></tr>
+                <tr><td>Data sudah diinput tapi tidak muncul di borang</td>
+                    <td>Belum diverifikasi. Statusnya masih draft, diajukan, atau ditolak.</td></tr>
+                <tr><td>Tombol Ubah tidak ada, tertulis “terkunci”</td>
+                    <td>Entri sedang menunggu verifikasi atau sudah terverifikasi. Tarik kembali
+                        ke draft, atau minta Wakil Dekan.</td></tr>
+                <tr><td>Masuk tapi tidak melihat apa pun</td>
+                    <td>Peran Anda masih <b>publik</b>. Minta Admin memberi peran.</td></tr>
+                <tr><td>Penanda antrean tidak hilang-hilang</td>
+                    <td>Ada entri yang ditolak server. Buka panel antrean, alasannya tertulis di
+                        sana.</td></tr>
+                <tr><td>Total Tabel 12 dan 13 berbeda</td>
+                    <td>Seharusnya tidak mungkin. Bila benar terjadi, laporkan — itu tanda ada
+                        yang salah pada perhitungannya.</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <p style="margin-top:16px" class="catatan-kaki">Panduan ini bagian dari aplikasi dan
+            ikut berubah bila sistemnya berubah. Berkasnya <code>panduan.html</code> di
+            repositori yang sama.</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script src="config.js?v=20260910e"></script>
+<script src="assets/app.js?v=20260910e"></script>
+<script>
+(function () {
+  'use strict';
+  var S = window.SIKEU, Auth = S.Auth;
+  // Panduan boleh dibaca siapa saja, termasuk yang belum masuk — justru orang
+  // yang belum tahu cara masuklah yang paling membutuhkannya.
+  Auth.siapkan()
+    .then(function () { return Auth.masuk_p() ? Auth.muatProfil().catch(function () {}) : null; })
+    .catch(function () {})
+    .then(function () { S.UI.kepala('panduan'); });
+})();
+</script>
+</body>
+</html>

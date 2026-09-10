@@ -264,6 +264,9 @@
       if (TINGKAT[peran] >= TINGKAT.admin) {
         tautan.push({ href: 'master.html', label: 'Kelola Master', kunci: 'master' });
       }
+      // Panduan sengaja terlihat oleh semua, termasuk yang belum masuk —
+      // justru merekalah yang paling membutuhkannya.
+      tautan.push({ href: 'panduan.html', label: 'Panduan', kunci: 'panduan' });
 
       var nav = tautan.map(function (t) {
         return '<a href="' + t.href + '"' + (t.kunci === halamanAktif ? ' class="aktif"' : '') + '>' +
