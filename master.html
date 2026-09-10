@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Kelola Master — SIKEU</title>
-<link rel="stylesheet" href="assets/style.css">
+<link rel="stylesheet" href="assets/style.css?v=20260910c">
 </head>
 <body>
 
@@ -41,17 +41,31 @@
 </div>
 
 <script>
-// Apps Script perlu beberapa detik bangun dari dingin pada panggilan pertama.
-// Setelah 2,5 detik, jelaskan penyebabnya supaya jeda ini tidak terbaca sebagai gagal.
 setTimeout(function () {
   var e = document.getElementById("ket-muat");
   if (e) e.textContent = "Panggilan pertama memakan beberapa detik karena Google Apps Script "
     + "perlu bangun dari mode tidur. Pemanggilan berikutnya jauh lebih cepat.";
 }, 2500);
+
+// Jaring pengaman: halaman tidak boleh berputar selamanya. Apa pun sebabnya —
+// jaringan putus, berkas aset kedaluwarsa di cache, atau galat tak terduga —
+// setelah 20 detik pengguna harus diberi tahu dan diberi jalan keluar.
+setTimeout(function () {
+  var w = document.getElementById("layar-muat");
+  if (!w) return;
+  w.innerHTML =
+    '<div class="judul-muat">Gagal menyelesaikan pemuatan</div>' +
+    '<div class="ket-muat">Sering kali ini karena browser masih memakai berkas versi lama. ' +
+    'Coba muat ulang paksa dengan <b>Ctrl+Shift+R</b>. Bila tetap gagal, periksa koneksi ' +
+    'internet Anda, atau hubungi pengelola sistem.</div>' +
+    '<button id="tbl-muat-ulang">Muat ulang halaman</button>';
+  var b = document.getElementById("tbl-muat-ulang");
+  if (b) b.addEventListener("click", function () { location.reload(); });
+}, 20000);
 </script>
 
-<script src="config.js"></script>
-<script src="assets/app.js"></script>
+<script src="config.js?v=20260910c"></script>
+<script src="assets/app.js?v=20260910c"></script>
 <script>
 (function () {
   'use strict';
