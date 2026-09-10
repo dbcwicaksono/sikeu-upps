@@ -8,6 +8,10 @@ Gratis sepenuhnya: halaman statis di **GitHub Pages**, data di **Google Sheets**
 API berupa **Google Apps Script**. Tidak ada server yang perlu dibayar, dan tidak ada kata
 sandi yang perlu dikelola.
 
+> Berkas ini menjelaskan **cara memasang**. Untuk cara memakai, buka `panduan.html` di
+> dalam aplikasi. Untuk **alasan di balik setiap keputusan rancangan** — bacaan wajib bagi
+> siapa pun yang meneruskan pengelolaan sistem ini — lihat [DOKUMENTASI.md](DOKUMENTASI.md).
+
 ```
 Browser (github.io)                Apps Script /exec           Google Sheets
         │                                  │                         │
