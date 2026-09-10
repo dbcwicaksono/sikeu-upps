@@ -8,98 +8,89 @@
 </head>
 <body>
 
-<div class="wadah">
+<div class="wadah" id="wadah">
   <h1 class="judul-halaman">Dashboard Keuangan</h1>
   <p class="sub-halaman" id="sub-judul">Memuat data…</p>
 
-  <div class="kartu jangan-cetak">
-    <div class="kartu-isi">
-      <div class="saring">
-        <div class="bidang" style="flex:0 0 190px">
-          <label for="f-jendela">Periode</label>
-          <select id="f-jendela"></select>
-        </div>
-        <div class="bidang" style="flex:0 0 230px">
-          <label for="f-status">Data yang dihitung</label>
-          <select id="f-status">
-            <option value="verif">Hanya yang terverifikasi</option>
-            <option value="semua">Termasuk yang menunggu verifikasi</option>
-          </select>
-          <div class="petunjuk" id="ket-status"></div>
-        </div>
-        <div class="bidang" style="flex:0 0 auto">
-          <button id="tbl-segarkan">Muat ulang data</button>
-        </div>
-        <div class="bidang" style="flex:0 0 auto">
-          <button id="tbl-cetak">Cetak / simpan PDF</button>
+  <div id="isi" hidden>
+    <div class="kartu jangan-cetak">
+      <div class="kartu-isi">
+        <div class="saring">
+          <div class="bidang" style="flex:0 0 200px">
+            <label for="f-jendela">Periode</label>
+            <select id="f-jendela"></select>
+          </div>
+          <div class="bidang" style="flex:0 0 250px">
+            <label for="f-status">Data yang dihitung</label>
+            <select id="f-status">
+              <option value="verif">Hanya yang terverifikasi</option>
+              <option value="semua">Termasuk yang diajukan (pratinjau)</option>
+            </select>
+            <div class="petunjuk" id="ket-status"></div>
+          </div>
+          <div class="bidang" style="flex:0 0 auto"><button id="tbl-segarkan">Muat ulang data</button></div>
+          <div class="bidang" style="flex:0 0 auto"><button id="tbl-cetak">Cetak / simpan PDF</button></div>
         </div>
       </div>
     </div>
-  </div>
 
-  <div id="peringatan"></div>
+    <div id="peringatan"></div>
+    <div class="grid-angka" id="ringkasan"></div>
 
-  <div class="grid-angka" id="ringkasan"></div>
-
-  <div class="kartu">
-    <div class="kartu-kepala">
-      <h2 class="kartu-judul">Skor Akreditasi Butir 5.1 — Keuangan
-        <small>Dihitung langsung dari data transaksi memakai rumus pada lembar penilaian</small></h2>
-      <div class="kartu-alat" id="skor-total"></div>
-    </div>
-    <div class="kartu-isi">
-      <div class="grid-skor" id="skor"></div>
-      <p class="catatan-kaki" id="skor-catatan"></p>
-    </div>
-  </div>
-
-  <div class="kartu">
-    <div class="kartu-kepala">
-      <h2 class="kartu-judul">Tabel 12. Jumlah Penerimaan Dana di UPPS
-        <small>Sumber dana tetap sesuai borang; jenis dana mengikuti master yang Anda kelola</small></h2>
-      <div class="kartu-alat jangan-cetak">
-        <button class="tombol-kecil" id="t12-excel">Unduh Excel</button>
+    <div class="kartu">
+      <div class="kartu-kepala">
+        <h2 class="kartu-judul">Skor Akreditasi Butir 5.1 — Keuangan
+          <small>Dihitung langsung dari data transaksi memakai rumus pada lembar penilaian</small></h2>
+        <div class="kartu-alat" id="skor-total"></div>
+      </div>
+      <div class="kartu-isi">
+        <div class="grid-skor" id="skor"></div>
+        <p class="catatan-kaki" id="skor-catatan"></p>
       </div>
     </div>
-    <div class="kartu-isi rapat">
-      <div class="bungkus-tabel" id="wadah-t12"></div>
-    </div>
-  </div>
 
-  <div class="kartu">
-    <div class="kartu-kepala">
-      <h2 class="kartu-judul">Tabel 13. Jumlah Penggunaan Dana di UPPS
-        <small>Tujuh jenis penggunaan tetap sesuai borang</small></h2>
-      <div class="kartu-alat jangan-cetak">
-        <button class="tombol-kecil" id="t13-excel">Unduh Excel</button>
+    <div class="kartu">
+      <div class="kartu-kepala">
+        <h2 class="kartu-judul">Tabel 12. Jumlah Penerimaan Dana di UPPS
+          <small>Sumber dana tetap sesuai borang; jenis dana mengikuti master yang Anda kelola</small></h2>
+        <div class="kartu-alat jangan-cetak">
+          <button class="tombol-kecil" id="t12-excel">Unduh Excel</button>
+        </div>
       </div>
+      <div class="kartu-isi rapat"><div class="bungkus-tabel" id="wadah-t12"></div></div>
     </div>
-    <div class="kartu-isi rapat">
-      <div class="bungkus-tabel" id="wadah-t13"></div>
-    </div>
-  </div>
 
-  <div class="kartu jangan-cetak">
-    <div class="kartu-kepala">
-      <h2 class="kartu-judul">Grafik</h2>
+    <div class="kartu">
+      <div class="kartu-kepala">
+        <h2 class="kartu-judul">Tabel 13. Jumlah Penggunaan Dana di UPPS
+          <small>Tujuh jenis penggunaan tetap sesuai borang</small></h2>
+        <div class="kartu-alat jangan-cetak">
+          <button class="tombol-kecil" id="t13-excel">Unduh Excel</button>
+        </div>
+      </div>
+      <div class="kartu-isi rapat"><div class="bungkus-tabel" id="wadah-t13"></div></div>
     </div>
-    <div class="kartu-isi">
-      <div class="grid-grafik">
-        <div>
-          <h3 style="font-size:13px;margin:0 0 10px">Penerimaan per sumber dana (juta Rp)</h3>
-          <div class="kotak-grafik"><canvas id="g-sumber"></canvas></div>
-        </div>
-        <div>
-          <h3 style="font-size:13px;margin:0 0 10px">Komposisi penggunaan dana (3 tahun)</h3>
-          <div class="kotak-grafik"><canvas id="g-penggunaan"></canvas></div>
-        </div>
-        <div>
-          <h3 style="font-size:13px;margin:0 0 10px">Operasional vs investasi per tahun (juta Rp)</h3>
-          <div class="kotak-grafik"><canvas id="g-kelompok"></canvas></div>
-        </div>
-        <div>
-          <h3 style="font-size:13px;margin:0 0 10px">Tren penerimaan seluruh tahun (juta Rp)</h3>
-          <div class="kotak-grafik"><canvas id="g-tren"></canvas></div>
+
+    <div class="kartu jangan-cetak">
+      <div class="kartu-kepala"><h2 class="kartu-judul">Grafik</h2></div>
+      <div class="kartu-isi">
+        <div class="grid-grafik">
+          <div>
+            <h3 style="font-size:13px;margin:0 0 10px">Penerimaan per sumber dana (juta Rp)</h3>
+            <div class="kotak-grafik"><canvas id="g-sumber"></canvas></div>
+          </div>
+          <div>
+            <h3 style="font-size:13px;margin:0 0 10px">Komposisi penggunaan dana (3 tahun)</h3>
+            <div class="kotak-grafik"><canvas id="g-penggunaan"></canvas></div>
+          </div>
+          <div>
+            <h3 style="font-size:13px;margin:0 0 10px">Operasional vs investasi per tahun (juta Rp)</h3>
+            <div class="kotak-grafik"><canvas id="g-kelompok"></canvas></div>
+          </div>
+          <div>
+            <h3 style="font-size:13px;margin:0 0 10px">Tren penerimaan seluruh tahun (juta Rp)</h3>
+            <div class="kotak-grafik"><canvas id="g-tren"></canvas></div>
+          </div>
         </div>
       </div>
     </div>
@@ -112,25 +103,37 @@
 <script>
 (function () {
   'use strict';
-  var S = window.SIKEU, Fmt = S.Fmt, H = S.Hitung;
+  var S = window.SIKEU, Fmt = S.Fmt, H = S.Hitung, Auth = S.Auth;
   var rekap = null, grafik = {}, t12 = null, t13 = null, tahunAktif = [];
-
   var WARNA = ['#2f5597', '#1a7f5a', '#b45309', '#7c4dbe', '#0e7490', '#b02a2a', '#6b7280'];
 
-  S.UI.kepala('dashboard');
+  mulai();
 
-  document.getElementById('tbl-segarkan').addEventListener('click', function () { muat(true); });
-  document.getElementById('tbl-cetak').addEventListener('click', function () { window.print(); });
-  document.getElementById('f-jendela').addEventListener('change', gambar);
-  document.getElementById('f-status').addEventListener('change', gambar);
-  document.getElementById('t12-excel').addEventListener('click', function () {
-    var t = document.querySelector('#wadah-t12 table');
-    if (t) S.Ekspor.tabelKeExcel(t, 'Tabel-12-Penerimaan-Dana', 'Tabel 12. Jumlah Penerimaan Dana di UPPS');
-  });
-  document.getElementById('t13-excel').addEventListener('click', function () {
-    var t = document.querySelector('#wadah-t13 table');
-    if (t) S.Ekspor.tabelKeExcel(t, 'Tabel-13-Penggunaan-Dana', 'Tabel 13. Jumlah Penggunaan Dana di UPPS');
-  });
+  async function mulai() {
+    try { await Auth.siapkan(); } catch (err) { /* tombol masuk akan menampilkan galatnya */ }
+    if (Auth.masuk_p()) {
+      try { await Auth.muatProfil(); } catch (err) { /* profil gagal, lanjut sebagai publik */ }
+    }
+    S.UI.kepala('dashboard');
+    Auth.saatMasuk(function () { location.reload(); });
+    pasangKejadian();
+    muat(false);
+  }
+
+  function pasangKejadian() {
+    document.getElementById('tbl-segarkan').addEventListener('click', function () { muat(true); });
+    document.getElementById('tbl-cetak').addEventListener('click', function () { window.print(); });
+    document.getElementById('f-jendela').addEventListener('change', gambar);
+    document.getElementById('f-status').addEventListener('change', gambar);
+    document.getElementById('t12-excel').addEventListener('click', function () {
+      var t = document.querySelector('#wadah-t12 table');
+      if (t) S.Ekspor.tabelKeExcel(t, 'Tabel-12-Penerimaan-Dana', 'Tabel 12. Jumlah Penerimaan Dana di UPPS');
+    });
+    document.getElementById('t13-excel').addEventListener('click', function () {
+      var t = document.querySelector('#wadah-t13 table');
+      if (t) S.Ekspor.tabelKeExcel(t, 'Tabel-13-Penggunaan-Dana', 'Tabel 13. Jumlah Penggunaan Dana di UPPS');
+    });
+  }
 
   // ------------------------------------------------------------------ muat
 
@@ -138,28 +141,31 @@
     document.getElementById('sub-judul').innerHTML = '<span class="pias"></span>Memuat data…';
     try {
       rekap = await S.API.panggil('rekap', {});
+      document.getElementById('isi').hidden = false;
       siapkanPeriode();
       gambar();
       if (paksa) S.UI.sukses('Data dimuat ulang.');
     } catch (err) {
       document.getElementById('sub-judul').textContent = '';
-      document.getElementById('peringatan').innerHTML = err.perluMasuk
-        ? '<div class="pesan pesan-info"><b>Dashboard ini memerlukan login.</b><br>' +
+      document.getElementById('isi').hidden = true;
+      if (err.perluMasuk) {
+        S.UI.layarMasuk(document.getElementById('wadah'), 'Dashboard Keuangan',
           'Angka keuangan hanya ditampilkan kepada pengguna terdaftar. ' +
-          '<a href="input.html">Masuk di sini</a>.<br><br>' +
-          '<small>Wakil Dekan dapat membuka dashboard untuk umum lewat Kelola Master → ' +
-          'Parameter Penilaian → <code>dashboard_publik</code> = <code>ya</code>.</small></div>'
-        : '<div class="pesan pesan-galat"><b>Gagal memuat data.</b><br>' + Fmt.aman(err.message) + '</div>';
+          'Masuk dengan akun Google Anda untuk melanjutkan.');
+      } else {
+        document.getElementById('wadah').insertAdjacentHTML('beforeend',
+          '<div class="pesan pesan-galat"><b>Gagal memuat data.</b><br>' + Fmt.aman(err.message) + '</div>');
+      }
     }
   }
 
   function siapkanPeriode() {
     var sel = document.getElementById('f-jendela');
     var ts = H.jendelaTS(rekap.master);
-    var semua = (rekap.master.tahun || []).map(function (t) { return t.tahun; }).sort(function (a, b) { return a - b; });
+    var semua = (rekap.master.tahun || []).map(function (t) { return t.tahun; })
+      .sort(function (a, b) { return a - b; });
 
     var pilihan = [{ nilai: ts.join(','), label: 'Jendela akreditasi — ' + ts.join(', ') }];
-    // Jendela tiga tahun bergulir lainnya, agar bisa membandingkan periode.
     for (var i = semua.length - 3; i >= 0; i--) {
       var w = semua.slice(i, i + 3);
       if (w.join(',') !== ts.join(',')) pilihan.push({ nilai: w.join(','), label: w.join(', ') });
@@ -170,10 +176,10 @@
       return '<option value="' + p.nilai + '">' + Fmt.aman(p.label) + '</option>';
     }).join('');
 
-    var m = rekap.ringkas.menunggu_verifikasi;
-    document.getElementById('ket-status').textContent = m
-      ? m + ' transaksi masih menunggu verifikasi.'
-      : 'Semua transaksi sudah terverifikasi.';
+    var r = rekap.ringkas;
+    document.getElementById('ket-status').textContent = r.diajukan
+      ? r.diajukan + ' transaksi menunggu verifikasi.'
+      : 'Tidak ada yang menunggu verifikasi.';
   }
 
   // ---------------------------------------------------------------- gambar
@@ -203,23 +209,37 @@
   }
 
   function gambarPeringatan(ikutMenunggu) {
-    var p = [];
-    var r = rekap.ringkas;
-    if (r.menunggu_verifikasi && !ikutMenunggu) {
-      p.push('<div class="pesan pesan-ingat"><b>' + r.menunggu_verifikasi +
-        ' transaksi menunggu verifikasi</b> dan belum ikut dihitung pada tabel di bawah. ' +
-        '<a href="input.html">Buka halaman Input</a> untuk memverifikasi.</div>');
+    var p = [], r = rekap.ringkas;
+    var bolehInput = Auth.boleh('operator');
+
+    if (ikutMenunggu) {
+      p.push('<div class="pesan pesan-ingat"><b>Mode pratinjau.</b> Tabel di bawah ikut menghitung ' +
+        r.diajukan + ' transaksi yang masih menunggu verifikasi. ' +
+        '<b>Jangan dipakai untuk borang</b> — kembalikan ke “Hanya yang terverifikasi” sebelum mencetak.</div>');
+    } else if (r.diajukan) {
+      p.push('<div class="pesan pesan-ingat"><b>' + r.diajukan +
+        ' transaksi menunggu verifikasi</b> dan belum ikut dihitung. ' +
+        (bolehInput ? '<a href="input.html?status=diajukan">Buka antrean verifikasi</a>.' : '') + '</div>');
+    }
+    if (r.draft) {
+      p.push('<div class="pesan pesan-info">' + r.draft + ' transaksi masih berstatus draft. ' +
+        'Draft tidak pernah masuk hitungan borang sampai diajukan dan diverifikasi.' +
+        (bolehInput ? ' <a href="input.html?status=draft">Lihat draft</a>.' : '') + '</div>');
+    }
+    if (r.ditolak) {
+      p.push('<div class="pesan pesan-galat">' + r.ditolak + ' transaksi ditolak dan menunggu revisi.' +
+        (bolehInput ? ' <a href="input.html?status=ditolak">Lihat daftarnya</a>.' : '') + '</div>');
     }
     if (r.perlu_tinjau) {
       p.push('<div class="pesan pesan-ingat"><b>' + r.perlu_tinjau +
         ' transaksi perlu ditinjau manual.</b> Data hasil migrasi yang asalnya bertanda ' +
-        '“Investasi Sarpras” sementara dimasukkan ke <i>Investasi sarana</i> — ' +
-        'periksa mana yang seharusnya <i>Investasi prasarana</i>. ' +
-        '<a href="input.html?tinjau=1">Lihat daftarnya</a>.</div>');
+        '“Investasi Sarpras” sementara masuk ke <i>Investasi sarana</i> — ' +
+        'periksa mana yang seharusnya <i>Investasi prasarana</i>.' +
+        (bolehInput ? ' <a href="input.html?tinjau=1">Lihat daftarnya</a>.' : '') + '</div>');
     }
     var yatim = t12.kelompok.some(function (k) { return k.baris.some(function (b) { return b.yatim; }); });
     if (yatim) {
-      p.push('<div class="pesan pesan-galat">Ada transaksi yang menunjuk jenis dana yang sudah terhapus dari master. ' +
+      p.push('<div class="pesan pesan-galat">Ada transaksi yang menunjuk jenis dana di luar master. ' +
         'Baris tersebut ditandai di Tabel 12 agar angkanya tidak hilang diam-diam.</div>');
     }
     document.getElementById('peringatan').innerHTML = p.join('');
@@ -228,27 +248,15 @@
   function gambarRingkasan(skor) {
     var n = tahunAktif.length;
     var kartu = [
-      {
-        label: 'Total penerimaan ' + n + ' tahun',
-        nilai: Fmt.juta(t12.total.jumlah, 0),
-        catatan: 'juta rupiah · rata-rata ' + Fmt.juta(t12.total.rata, 0) + ' per tahun'
-      },
-      {
-        label: 'Total penggunaan ' + n + ' tahun',
-        nilai: Fmt.juta(t13.total.jumlah, 0),
+      { label: 'Total penerimaan ' + n + ' tahun', nilai: Fmt.juta(t12.total.jumlah, 0),
+        catatan: 'juta rupiah · rata-rata ' + Fmt.juta(t12.total.rata, 0) + ' per tahun' },
+      { label: 'Total penggunaan ' + n + ' tahun', nilai: Fmt.juta(t13.total.jumlah, 0),
         catatan: 'operasional ' + Fmt.persen(t13.total.jumlah ? t13.subtotal_operasional.jumlah / t13.total.jumlah * 100 : 0, 1) +
-                 ' · investasi ' + Fmt.persen(t13.total.jumlah ? t13.subtotal_investasi.jumlah / t13.total.jumlah * 100 : 0, 1)
-      },
-      {
-        label: 'Dana dari mahasiswa',
-        nilai: Fmt.persen(skor.nilai.pdm * 100, 1),
-        catatan: Fmt.juta(t12.subtotal_mahasiswa.jumlah, 0) + ' juta · ambang skor 4 adalah ≤ 33%'
-      },
-      {
-        label: 'Skor terbobot butir 5.1',
-        nilai: Fmt.angka(skor.total_terbobot, 2),
-        catatan: 'dari maksimum ' + Fmt.angka(skor.total_bobot * 4, 2)
-      }
+                 ' · investasi ' + Fmt.persen(t13.total.jumlah ? t13.subtotal_investasi.jumlah / t13.total.jumlah * 100 : 0, 1) },
+      { label: 'Dana dari mahasiswa', nilai: Fmt.persen(skor.nilai.pdm * 100, 1),
+        catatan: Fmt.juta(t12.subtotal_mahasiswa.jumlah, 0) + ' juta · ambang skor 4 adalah ≤ 33%' },
+      { label: 'Skor terbobot butir 5.1', nilai: Fmt.angka(skor.total_terbobot, 2),
+        catatan: 'dari maksimum ' + Fmt.angka(skor.total_bobot * 4, 2) }
     ];
     document.getElementById('ringkasan').innerHTML = kartu.map(function (k) {
       return '<div class="angka-kartu"><div class="angka-label">' + Fmt.aman(k.label) + '</div>' +
@@ -266,8 +274,7 @@
         '<div class="skor-nilai">' + Fmt.angka(b.skor, 2) + ' <span>/ 4,00</span></div>' +
         '<div class="skor-dasar">' + Fmt.aman(b.dasar) + '<br>bobot ' + Fmt.angka(b.bobot, 2) +
           ' → terbobot <b>' + Fmt.angka(b.terbobot, 3) + '</b></div>' +
-        '<div class="skor-rumus">' + Fmt.aman(b.rumus) + '</div>' +
-      '</div>';
+        '<div class="skor-rumus">' + Fmt.aman(b.rumus) + '</div></div>';
     }).join('');
 
     document.getElementById('skor-total').innerHTML =
@@ -280,7 +287,7 @@
       'Skor dihitung atas ' + tahunAktif.length + ' tahun periode terpilih.';
   }
 
-  // ---------------------------------------------------------------- tabel
+  // ----------------------------------------------------------------- tabel
 
   function htmlTabel12(master, t) {
     var th = t.tahun.map(function (y) {
@@ -288,10 +295,10 @@
     }).join('');
 
     var h = '<table class="borang"><thead>' +
-      '<tr><th rowspan="2" style="width:170px">Sumber Dana</th><th rowspan="2" style="width:200px">Jenis Dana</th>' +
+      '<tr><th rowspan="2" style="width:170px">Sumber Dana</th>' +
+      '<th rowspan="2" style="width:200px">Jenis Dana</th>' +
       '<th colspan="' + (t.tahun.length + 1) + '">Jumlah Dana dalam (Juta Rp)</th></tr>' +
-      '<tr>' + th + '<th class="angka">Rata-rata per Tahun</th></tr>' +
-      '</thead><tbody>';
+      '<tr>' + th + '<th class="angka">Rata-rata per Tahun</th></tr></thead><tbody>';
 
     var sel = function (v) { return '<td class="angka">' + Fmt.juta(v) + '</td>'; };
 
@@ -300,11 +307,11 @@
       k.baris.forEach(function (b, i) {
         h += '<tr>';
         if (i === 0) h += '<td rowspan="' + k.baris.length + '">' + Fmt.aman(k.nama) + '</td>';
-        h += '<td>' + Fmt.aman(b.nama) + (b.yatim ? ' <span class="lencana lencana-merah">yatim</span>' : '') + '</td>';
+        h += '<td>' + Fmt.aman(b.nama) +
+             (b.yatim ? ' <span class="lencana lencana-merah">yatim</span>' : '') + '</td>';
         b.per_tahun.forEach(function (v) { h += sel(v); });
         h += sel(b.rata) + '</tr>';
       });
-
       // Sub-total mahasiswa berdiri sendiri, sesuai format borang.
       if (k.kode === 'MHS') {
         h += '<tr class="subtotal"><td colspan="2">Jumlah Sub-Total</td>';
@@ -333,28 +340,26 @@
     }).join('');
 
     var h = '<table class="borang"><thead>' +
-      '<tr>' +
-        '<th rowspan="3" style="width:34px">No</th>' +
-        '<th rowspan="3" style="width:280px">Jenis Penggunaan</th>' +
-        '<th colspan="' + (t.tahun.length * 2) + '">Jumlah Dana dan Persentase Setiap Tahun</th>' +
-        '<th rowspan="3" class="angka">Total<br>(Juta Rp)</th>' +
-        '<th rowspan="3" class="angka">Rata-rata<br>(Juta Rp)</th>' +
-      '</tr>' +
-      '<tr>' + atas + '</tr>' +
-      '<tr>' + bawah + '</tr>' +
-      '</thead><tbody>';
+      '<tr><th rowspan="3" style="width:34px">No</th>' +
+      '<th rowspan="3" style="width:280px">Jenis Penggunaan</th>' +
+      '<th colspan="' + (t.tahun.length * 2) + '">Jumlah Dana dan Persentase Setiap Tahun</th>' +
+      '<th rowspan="3" class="angka">Total<br>(Juta Rp)</th>' +
+      '<th rowspan="3" class="angka">Rata-rata<br>(Juta Rp)</th></tr>' +
+      '<tr>' + atas + '</tr><tr>' + bawah + '</tr></thead><tbody>';
 
     var pasang = function (b) {
       var s = '';
       b.per_tahun.forEach(function (v, i) {
-        s += '<td class="angka">' + Fmt.juta(v) + '</td><td class="angka">' + Fmt.angka(b.persen[i]) + '</td>';
+        s += '<td class="angka">' + Fmt.juta(v) + '</td>' +
+             '<td class="angka">' + Fmt.angka(b.persen[i]) + '</td>';
       });
       return s;
     };
 
     t.baris.forEach(function (b) {
       h += '<tr><td class="nomor">' + b.no + '</td><td>' + Fmt.aman(b.nama) + '</td>' + pasang(b) +
-        '<td class="angka">' + Fmt.juta(b.jumlah) + '</td><td class="angka">' + Fmt.juta(b.rata) + '</td></tr>';
+        '<td class="angka">' + Fmt.juta(b.jumlah) + '</td>' +
+        '<td class="angka">' + Fmt.juta(b.rata) + '</td></tr>';
       if (b.kode === 'P3') {
         h += '<tr class="subtotal"><td colspan="2">Jumlah Sub-Total</td>' + pasang(t.subtotal_operasional) +
           '<td class="angka">' + Fmt.juta(t.subtotal_operasional.jumlah) + '</td>' +
@@ -386,13 +391,9 @@
     responsive: true, maintainAspectRatio: false,
     plugins: {
       legend: { labels: { font: { size: 11 }, boxWidth: 12, usePointStyle: true } },
-      tooltip: {
-        callbacks: {
-          label: function (c) {
-            return c.dataset.label + ': ' + Fmt.angka(c.parsed.y !== undefined ? c.parsed.y : c.parsed) + ' juta';
-          }
-        }
-      }
+      tooltip: { callbacks: { label: function (c) {
+        return c.dataset.label + ': ' + Fmt.angka(c.parsed.y !== undefined ? c.parsed.y : c.parsed) + ' juta';
+      } } }
     },
     scales: { y: { beginAtZero: true, ticks: { font: { size: 11 } } }, x: { ticks: { font: { size: 11 } } } }
   };
@@ -406,11 +407,8 @@
       data: {
         labels: labelTahun,
         datasets: t12.kelompok.filter(function (k) { return k.sub_jumlah > 0; }).map(function (k, i) {
-          return {
-            label: k.nama,
-            data: k.sub_per_tahun.map(function (v) { return v / 1e6; }),
-            backgroundColor: WARNA[i % WARNA.length]
-          };
+          return { label: k.nama, data: k.sub_per_tahun.map(function (v) { return v / 1e6; }),
+                   backgroundColor: WARNA[i % WARNA.length] };
         })
       },
       options: Object.assign({}, opsiDasar, {
@@ -423,10 +421,8 @@
       type: 'doughnut',
       data: {
         labels: pakai.map(function (b) { return b.nama; }),
-        datasets: [{
-          data: pakai.map(function (b) { return b.jumlah / 1e6; }),
-          backgroundColor: pakai.map(function (_, i) { return WARNA[i % WARNA.length]; })
-        }]
+        datasets: [{ data: pakai.map(function (b) { return b.jumlah / 1e6; }),
+                     backgroundColor: pakai.map(function (_, i) { return WARNA[i % WARNA.length]; }) }]
       },
       options: {
         responsive: true, maintainAspectRatio: false,
@@ -442,36 +438,35 @@
       data: {
         labels: labelTahun,
         datasets: [
-          { label: 'Operasional', data: t13.subtotal_operasional.per_tahun.map(function (v) { return v / 1e6; }), backgroundColor: WARNA[0] },
-          { label: 'Investasi', data: t13.subtotal_investasi.per_tahun.map(function (v) { return v / 1e6; }), backgroundColor: WARNA[2] }
+          { label: 'Operasional', data: t13.subtotal_operasional.per_tahun.map(function (v) { return v / 1e6; }),
+            backgroundColor: WARNA[0] },
+          { label: 'Investasi', data: t13.subtotal_investasi.per_tahun.map(function (v) { return v / 1e6; }),
+            backgroundColor: WARNA[2] }
         ]
       },
       options: opsiDasar
     });
 
-    // Tren seluruh tahun memakai data mentah, bukan jendela terpilih.
-    var semuaTahun = (master.tahun || []).map(function (t) { return t.tahun; }).sort(function (a, b) { return a - b; });
+    // Tren seluruh tahun memakai agregat mentah, bukan jendela terpilih.
+    var semuaTahun = (master.tahun || []).map(function (t) { return t.tahun; })
+      .sort(function (a, b) { return a - b; });
     var ikutMenunggu = document.getElementById('f-status').value === 'semua';
     var perTahun = semuaTahun.map(function (y) {
       return rekap.agregat.reduce(function (x, a) {
-        return (a.t === y && (ikutMenunggu || a.v)) ? x + a.n : x;
+        var masuk = a.v || (ikutMenunggu && a.st === S.STATUS.DIAJUKAN);
+        return (a.t === y && masuk) ? x + a.n : x;
       }, 0) / 1e6;
     });
     buat('g-tren', {
       type: 'line',
       data: {
         labels: semuaTahun,
-        datasets: [{
-          label: 'Total penerimaan', data: perTahun,
-          borderColor: WARNA[0], backgroundColor: 'rgba(47,85,151,.12)',
-          fill: true, tension: .3, pointRadius: 4
-        }]
+        datasets: [{ label: 'Total penerimaan', data: perTahun, borderColor: WARNA[0],
+                     backgroundColor: 'rgba(47,85,151,.12)', fill: true, tension: .3, pointRadius: 4 }]
       },
       options: opsiDasar
     });
   }
-
-  muat(false);
 })();
 </script>
 </body>

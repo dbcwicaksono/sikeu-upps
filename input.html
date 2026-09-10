@@ -8,34 +8,7 @@
 </head>
 <body>
 
-<div class="wadah">
-
-  <!-- ------------------------------------------------------------- masuk -->
-  <div id="layar-masuk" hidden>
-    <div class="masuk-bungkus">
-      <div class="kartu">
-        <div class="kartu-kepala"><h2 class="kartu-judul">Masuk</h2></div>
-        <div class="kartu-isi">
-          <div id="masuk-pesan"></div>
-          <form id="form-masuk">
-            <div class="bidang" style="margin-bottom:14px">
-              <label for="m-username">Username</label>
-              <input id="m-username" autocomplete="username" required>
-            </div>
-            <div class="bidang" style="margin-bottom:18px">
-              <label for="m-sandi">Kata sandi</label>
-              <input id="m-sandi" type="password" autocomplete="current-password" required>
-            </div>
-            <button class="tombol-utama" style="width:100%;justify-content:center" type="submit" id="tbl-masuk">Masuk</button>
-          </form>
-          <p class="catatan-kaki">Belum punya akun? Hubungi Wakil Dekan untuk dibuatkan.
-            <br>Dashboard dapat dilihat tanpa masuk lewat menu di atas.</p>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ------------------------------------------------------------- kerja -->
+<div class="wadah" id="wadah">
   <div id="layar-kerja" hidden>
     <h1 class="judul-halaman">Input Data Keuangan</h1>
     <p class="sub-halaman" id="sub-judul"></p>
@@ -46,7 +19,6 @@
       <div class="kartu-kepala">
         <h2 class="kartu-judul">Daftar Transaksi <small id="ringkas-daftar"></small></h2>
         <div class="kartu-alat">
-          <button id="tbl-sandi" class="tombol-kecil">Ganti kata sandi</button>
           <button id="tbl-csv" class="tombol-kecil">Unduh CSV</button>
           <button id="tbl-tambah" class="tombol-utama">+ Tambah transaksi</button>
         </div>
@@ -60,24 +32,30 @@
           <div class="bidang"><label for="f-penggunaan">Jenis penggunaan</label><select id="f-penggunaan"></select></div>
           <div class="bidang"><label for="f-status">Status</label><select id="f-status">
             <option value="">Semua status</option>
-            <option value="Menunggu Verifikasi">Menunggu Verifikasi</option>
-            <option value="Terverifikasi">Terverifikasi</option>
+            <option value="draft">Draft</option>
+            <option value="diajukan">Menunggu Verifikasi</option>
+            <option value="terverifikasi">Terverifikasi</option>
+            <option value="ditolak">Ditolak</option>
           </select></div>
           <div class="bidang" id="bidang-lingkup" hidden><label for="f-lingkup">Lingkup</label><select id="f-lingkup">
             <option value="">Hanya data saya</option>
-            <option value="1">Semua data</option>
+            <option value="semua">Semua data (baca saja)</option>
           </select></div>
           <div class="bidang" style="flex:0 0 auto"><button id="tbl-saring" class="tombol-utama">Terapkan</button></div>
           <div class="bidang" style="flex:0 0 auto"><button id="tbl-reset">Reset</button></div>
         </div>
       </div>
 
-      <div id="alat-massal" class="kartu-isi" style="border-top:1px solid var(--garis);background:#f7f9fc" hidden>
+      <div id="alat-massal" class="kartu-isi" style="border-top:1px solid var(--garis);background:#f7f9fc">
         <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-          <b id="massal-jumlah"></b>
-          <button id="tbl-verif" class="tombol-utama tombol-kecil">Verifikasi terpilih</button>
-          <button id="tbl-batal-verif" class="tombol-kecil">Batalkan verifikasi</button>
-          <button id="tbl-selesai-tinjau" class="tombol-kecil">Tandai selesai ditinjau</button>
+          <b id="massal-jumlah">Pilih transaksi untuk diproses</b>
+          <button id="tbl-ajukan" class="tombol-utama tombol-kecil">Ajukan untuk verifikasi</button>
+          <button id="tbl-tarik" class="tombol-kecil">Tarik kembali ke draft</button>
+          <span id="alat-verifikator" hidden>
+            <button id="tbl-verif" class="tombol-utama tombol-kecil">Verifikasi</button>
+            <button id="tbl-tolak" class="tombol-kecil tombol-bahaya">Tolak…</button>
+            <button id="tbl-batal-verif" class="tombol-kecil">Batalkan verifikasi</button>
+          </span>
         </div>
       </div>
 
@@ -99,77 +77,67 @@
 <script>
 (function () {
   'use strict';
-  var S = window.SIKEU, Fmt = S.Fmt;
-  var master = null, halaman = 1, hasil = null, terpilih = {};
-
+  var S = window.SIKEU, Fmt = S.Fmt, Auth = S.Auth, ST = S.STATUS;
+  var master = null, halaman = 1, hasil = null, terpilih = {}, saya = null;
   var param = new URLSearchParams(location.search);
 
-  // ------------------------------------------------------------ awal mula
+  mulai();
 
-  if (S.Sesi.masuk_p()) mulaiKerja(); else tampilkanMasuk();
+  async function mulai() {
+    try { await Auth.siapkan(); } catch (err) { /* ditangani di layar masuk */ }
 
-  function tampilkanMasuk() {
+    if (!Auth.masuk_p()) return gerbangMasuk('Masuk untuk menginput data',
+      'Halaman ini memerlukan identitas Google Anda, supaya setiap entri tercatat atas nama pemiliknya.');
+
+    try { saya = await Auth.muatProfil(); }
+    catch (err) {
+      if (err.perluMasuk) return gerbangMasuk('Sesi berakhir', 'Silakan masuk kembali dengan akun Google Anda.');
+      return tampilGalat(err.message);
+    }
+
     S.UI.kepala('input');
-    document.getElementById('layar-masuk').hidden = false;
-    document.getElementById('form-masuk').addEventListener('submit', async function (e) {
-      e.preventDefault();
-      var tbl = document.getElementById('tbl-masuk');
-      tbl.disabled = true;
-      tbl.textContent = 'Memeriksa…';
-      document.getElementById('masuk-pesan').innerHTML = '';
-      try {
-        var r = await S.API.panggil('login', {
-          username: document.getElementById('m-username').value.trim(),
-          sandi: document.getElementById('m-sandi').value
-        });
-        S.Sesi.masuk(r.token, r.pengguna);
-        location.reload();
-      } catch (err) {
-        document.getElementById('masuk-pesan').innerHTML =
-          '<div class="pesan pesan-galat">' + Fmt.aman(err.message) + '</div>';
-        tbl.disabled = false;
-        tbl.textContent = 'Masuk';
-      }
-    });
-  }
 
-  async function mulaiKerja() {
-    S.UI.kepala('input');
+    if (!Auth.boleh('operator')) {
+      return tampilGalat('Peran Anda saat ini "' + Fmt.aman(saya.peran) + '", yang hanya dapat melihat dashboard. ' +
+        'Hubungi Wakil Dekan bila Anda perlu menginput data.');
+    }
+
     document.getElementById('layar-kerja').hidden = false;
-    var u = S.Sesi.pengguna();
 
-    if (u.peran === 'admin') {
-      document.getElementById('alat-massal').hidden = false;
+    if (Auth.boleh('verifikator')) {
+      document.getElementById('alat-verifikator').hidden = false;
     } else {
       document.getElementById('bidang-lingkup').hidden = false;
     }
 
-    try {
-      master = await S.API.panggil('master', {});
-    } catch (err) {
-      document.getElementById('peringatan').innerHTML =
-        '<div class="pesan pesan-galat">' + Fmt.aman(err.message) + '</div>';
-      return;
-    }
+    try { master = await S.API.panggil('master', {}); }
+    catch (err) { return tampilGalat(err.message); }
 
     isiSaringan();
-    if (param.get('tinjau')) {
-      document.getElementById('peringatan').innerHTML =
-        '<div class="pesan pesan-ingat">Menampilkan hanya transaksi yang <b>perlu ditinjau manual</b>. ' +
-        'Ini adalah data migrasi bertanda “Investasi Sarpras” yang sementara masuk ke <i>Investasi sarana</i>. ' +
-        'Ubah menjadi <i>Investasi prasarana</i> bila memang prasarana, lalu tandai selesai ditinjau. ' +
-        '<a href="input.html">Tampilkan semua</a></div>';
-    }
-
-    document.getElementById('sub-judul').textContent = u.peran === 'admin'
-      ? 'Anda masuk sebagai Wakil Dekan — akses penuh atas seluruh data dan verifikasi.'
-      : 'Anda masuk sebagai dosen — dapat menginput dana dari sumber eksternal dan mengubahnya selama belum diverifikasi.';
-
+    terapkanParamUrl();
     pasangKejadian();
+    perbaruiMassal();
+
+    document.getElementById('sub-judul').textContent = Auth.boleh('verifikator')
+      ? 'Anda masuk sebagai ' + (S.LABEL_PERAN[saya.peran] || saya.peran) +
+        ' — dapat memverifikasi, menolak, dan mengubah seluruh data.'
+      : 'Anda masuk sebagai operator — dapat menambah dan mengubah entri Anda sendiri selama belum diverifikasi.';
+
     await muatDaftar();
   }
 
-  // ------------------------------------------------------------- saringan
+  function gerbangMasuk(judul, keterangan) {
+    S.UI.kepala('input');
+    S.UI.layarMasuk(document.getElementById('wadah'), judul, keterangan);
+    Auth.saatMasuk(function () { location.reload(); });
+  }
+
+  function tampilGalat(pesan) {
+    document.getElementById('wadah').insertAdjacentHTML('beforeend',
+      '<div class="pesan pesan-galat">' + Fmt.aman(pesan) + '</div>');
+  }
+
+  // -------------------------------------------------------------- saringan
 
   function opsi(daftar, kosong) {
     return '<option value="">' + kosong + '</option>' + daftar.map(function (d) {
@@ -177,25 +145,28 @@
     }).join('');
   }
 
-  function sumberBoleh() {
-    var u = S.Sesi.pengguna();
-    if (u.peran === 'admin') return master.sumber_dana;
-    var boleh = String(master.parameter.sumber_dosen || 'PEM,LAIN').split(',').map(function (s) { return s.trim(); });
-    return master.sumber_dana.filter(function (s) { return boleh.indexOf(s.kode) >= 0; });
-  }
-
   function isiSaringan() {
     document.getElementById('f-tahun').innerHTML = opsi(
       master.tahun.slice().reverse().map(function (t) {
         return { nilai: t.tahun, label: t.label_ts ? t.tahun + ' (' + t.label_ts + ')' : String(t.tahun) };
       }), 'Semua tahun');
-
     document.getElementById('f-sumber').innerHTML = opsi(
       master.sumber_dana.map(function (s) { return { nilai: s.kode, label: s.nama }; }), 'Semua sumber');
-
     document.getElementById('f-penggunaan').innerHTML = opsi(
       master.jenis_penggunaan.map(function (p) { return { nilai: p.kode, label: p.no + '. ' + p.nama }; }),
       'Semua penggunaan');
+  }
+
+  function terapkanParamUrl() {
+    var st = param.get('status');
+    if (st) document.getElementById('f-status').value = st;
+    if (param.get('tinjau')) {
+      document.getElementById('peringatan').innerHTML =
+        '<div class="pesan pesan-ingat">Menampilkan hanya transaksi yang <b>perlu ditinjau manual</b>. ' +
+        'Ini data migrasi bertanda “Investasi Sarpras” yang sementara masuk ke <i>Investasi sarana</i>. ' +
+        'Ubah menjadi <i>Investasi prasarana</i> bila memang prasarana, lalu hapus centang ' +
+        '“masih perlu ditinjau” pada formnya. <a href="input.html">Tampilkan semua</a></div>';
+    }
   }
 
   function saringSekarang() {
@@ -207,9 +178,8 @@
       status: document.getElementById('f-status').value
     };
     if (param.get('tinjau')) f.perlu_tinjau = true;
-    if (S.Sesi.pengguna().peran !== 'admin') {
-      f.semua = document.getElementById('f-lingkup').value ? true : false;
-    }
+    var lingkup = document.getElementById('f-lingkup');
+    if (lingkup && !lingkup.closest('.bidang').hidden) f.lingkup = lingkup.value;
     return f;
   }
 
@@ -234,25 +204,32 @@
       if (hasil && halaman * hasil.per_halaman < hasil.total) { halaman++; muatDaftar(); }
     });
     document.getElementById('tbl-tambah').addEventListener('click', function () { formTransaksi(null); });
-    document.getElementById('tbl-sandi').addEventListener('click', formSandi);
     document.getElementById('tbl-csv').addEventListener('click', unduhCsv);
 
-    var vb = document.getElementById('tbl-verif');
-    if (vb) {
-      vb.addEventListener('click', function () { ubahVerifikasi('Terverifikasi', false); });
+    document.getElementById('tbl-ajukan').addEventListener('click', function () {
+      kirimMassal('ajukanTransaksi', { ids: Object.keys(terpilih) });
+    });
+    document.getElementById('tbl-tarik').addEventListener('click', function () {
+      kirimMassal('ajukanTransaksi', { ids: Object.keys(terpilih), tarik: true });
+    });
+
+    var v = document.getElementById('tbl-verif');
+    if (v) {
+      v.addEventListener('click', function () {
+        kirimMassal('putusanVerifikasi', { ids: Object.keys(terpilih), status: ST.TERVERIFIKASI });
+      });
       document.getElementById('tbl-batal-verif').addEventListener('click', function () {
-        ubahVerifikasi('Menunggu Verifikasi', false);
+        kirimMassal('putusanVerifikasi', { ids: Object.keys(terpilih), status: ST.DIAJUKAN });
       });
-      document.getElementById('tbl-selesai-tinjau').addEventListener('click', function () {
-        ubahVerifikasi('Terverifikasi', true);
-      });
+      document.getElementById('tbl-tolak').addEventListener('click', formTolak);
     }
   }
 
   // ---------------------------------------------------------------- daftar
 
   async function muatDaftar() {
-    document.getElementById('wadah-tabel').innerHTML = '<div class="memuat"><span class="pias"></span>Memuat…</div>';
+    document.getElementById('wadah-tabel').innerHTML =
+      '<div class="memuat"><span class="pias"></span>Memuat…</div>';
     terpilih = {};
     perbaruiMassal();
     try {
@@ -266,9 +243,9 @@
     }
   }
 
-  function namaJenisDana(id) {
-    var j = master.jenis_dana.filter(function (x) { return x.id === id; })[0];
-    return j ? j.nama : '(' + id + ')';
+  function namaJenisDana(kode) {
+    var j = master.jenis_dana.filter(function (x) { return x.kode === kode; })[0];
+    return j ? j.nama : '(' + kode + ')';
   }
   function namaSumber(kode) {
     var s = master.sumber_dana.filter(function (x) { return x.kode === kode; })[0];
@@ -278,14 +255,20 @@
     var p = master.jenis_penggunaan.filter(function (x) { return x.kode === kode; })[0];
     return p ? p.nama : kode;
   }
-  function namaRincian(id) {
-    if (!id) return '';
-    var r = master.rincian.filter(function (x) { return x.id === id; })[0];
-    return r ? r.nama : '(' + id + ')';
+  function namaRincian(kode) {
+    if (!kode) return '';
+    var r = master.rincian.filter(function (x) { return x.kode === kode; })[0];
+    return r ? r.nama : '(' + kode + ')';
+  }
+
+  /** Apakah baris ini dapat disunting oleh pengguna saat ini? */
+  function bolehUbah(t) {
+    if (Auth.boleh('verifikator')) return true;
+    if (!t.milik_saya) return false;
+    return t.status === ST.DRAFT || t.status === ST.DITOLAK;
   }
 
   function gambarTabel() {
-    var adminP = S.Sesi.pengguna().peran === 'admin';
     document.getElementById('ringkas-daftar').textContent =
       hasil.total + ' transaksi · total ' + Fmt.juta(hasil.jumlah_total) + ' juta rupiah';
 
@@ -297,33 +280,42 @@
     }
 
     var h = '<table class="data"><thead><tr>' +
-      (adminP ? '<th style="width:30px"><input type="checkbox" id="pilih-semua" style="width:auto"></th>' : '') +
+      '<th style="width:30px"><input type="checkbox" id="pilih-semua" style="width:auto"></th>' +
       '<th>Tanggal</th><th>Sumber / Jenis Dana</th><th>Penggunaan</th><th>Uraian</th>' +
-      '<th class="angka">Jumlah (Rp)</th><th>Status</th><th>Oleh</th><th></th>' +
-      '</tr></thead><tbody>';
+      '<th class="angka">Jumlah (Rp)</th><th>Status</th><th>Oleh</th><th></th></tr></thead><tbody>';
 
     hasil.baris.forEach(function (t) {
-      var lenc = t.status === 'Terverifikasi'
-        ? '<span class="lencana lencana-hijau">Terverifikasi</span>'
-        : '<span class="lencana lencana-jingga">Menunggu</span>';
       var tinjau = t.perlu_tinjau ? ' <span class="lencana lencana-merah">perlu ditinjau</span>' : '';
-      var rinc = t.rincian_id ? '<br><small style="color:var(--teks-lemah)">' + Fmt.aman(namaRincian(t.rincian_id)) + '</small>' : '';
+      var rinc = t.rincian_kode
+        ? '<br><small style="color:var(--teks-lemah)">' + Fmt.aman(namaRincian(t.rincian_kode)) + '</small>' : '';
+      var digabung = t.jenis_dana_dilaporkan
+        ? '<br><small style="color:var(--jingga)">dilaporkan sebagai ' +
+          Fmt.aman(namaJenisDana(t.jenis_dana_dilaporkan)) + '</small>' : '';
+      var alasan = (t.status === ST.DITOLAK && t.catatan_verifikasi)
+        ? '<br><small style="color:var(--merah)"><b>Alasan ditolak:</b> ' +
+          Fmt.aman(t.catatan_verifikasi) + '</small>' : '';
 
       h += '<tr>' +
-        (adminP ? '<td><input type="checkbox" class="pilih" data-id="' + t.id + '" style="width:auto"></td>' : '') +
-        '<td>' + Fmt.tanggal(t.tanggal) + '<br><small style="color:var(--teks-lemah)">' + t.tahun + '</small></td>' +
+        '<td><input type="checkbox" class="pilih" data-id="' + t.id + '" style="width:auto"></td>' +
+        '<td>' + Fmt.tanggal(t.tanggal) +
+          '<br><small style="color:var(--teks-lemah)">' + t.tahun + '</small></td>' +
         '<td>' + Fmt.aman(namaSumber(t.sumber_kode)) +
-          '<br><small style="color:var(--teks-lemah)">' + Fmt.aman(namaJenisDana(t.jenis_dana_id)) + '</small>' + rinc + '</td>' +
+          '<br><small style="color:var(--teks-lemah)">' + Fmt.aman(namaJenisDana(t.jenis_dana_kode)) +
+          '</small>' + digabung + rinc + '</td>' +
         '<td>' + Fmt.aman(namaPenggunaan(t.penggunaan_kode)) +
           '<br><small style="color:var(--teks-lemah)">' + Fmt.aman(t.skema) + '</small></td>' +
-        '<td style="max-width:340px">' + Fmt.aman(t.uraian) + tinjau +
-          (t.catatan ? '<br><small style="color:var(--teks-lemah)">' + Fmt.aman(t.catatan) + '</small>' : '') + '</td>' +
+        '<td style="max-width:330px">' + Fmt.aman(t.uraian) + tinjau +
+          (t.catatan ? '<br><small style="color:var(--teks-lemah)">' + Fmt.aman(t.catatan) + '</small>' : '') +
+          alasan + '</td>' +
         '<td class="angka">' + Number(t.jumlah).toLocaleString('id-ID') + '</td>' +
-        '<td>' + lenc + '</td>' +
-        '<td><small>' + Fmt.aman(t.dibuat_oleh) + '</small></td>' +
+        '<td>' + Fmt.status(t.status) + '</td>' +
+        '<td><small title="' + Fmt.aman(t.dibuat_oleh) + '">' +
+          Fmt.aman(String(t.dibuat_oleh).split('@')[0]) + '</small></td>' +
         '<td class="aksi">' +
-          '<button class="tombol-kecil ubah" data-id="' + t.id + '">Ubah</button> ' +
-          '<button class="tombol-kecil tombol-bahaya hapus" data-id="' + t.id + '">Hapus</button>' +
+          (bolehUbah(t)
+            ? '<button class="tombol-kecil ubah" data-id="' + t.id + '">Ubah</button> ' +
+              '<button class="tombol-kecil tombol-bahaya hapus" data-id="' + t.id + '">Hapus</button>'
+            : '<small style="color:var(--teks-lemah)">terkunci</small>') +
         '</td></tr>';
     });
 
@@ -337,27 +329,26 @@
     Array.prototype.forEach.call(document.querySelectorAll('.hapus'), function (b) {
       b.addEventListener('click', function () {
         var t = hasil.baris.filter(function (x) { return x.id === b.dataset.id; })[0];
-        S.UI.konfirmasi('Hapus transaksi', 'Hapus "' + t.uraian + '" senilai ' +
-          Fmt.rupiah(t.jumlah) + '? Tindakan ini tidak dapat dibatalkan.', async function () {
-          try {
-            var r = await S.API.panggil('hapusTransaksi', { id: t.id });
-            S.UI.sukses(r.pesan);
-            muatDaftar();
-          } catch (err) { S.UI.galat(err.message); }
-        }, 'Hapus');
+        S.UI.konfirmasi('Hapus transaksi',
+          'Hapus "' + t.uraian + '" senilai ' + Fmt.rupiah(t.jumlah) + '? Tindakan ini tidak dapat dibatalkan.',
+          async function () {
+            try {
+              var r = await S.API.panggil('hapusTransaksi', { id: t.id });
+              S.UI.sukses(r.pesan);
+              muatDaftar();
+            } catch (err) { S.UI.galat(err.message); }
+          }, 'Hapus');
       });
     });
 
     var semua = document.getElementById('pilih-semua');
-    if (semua) {
-      semua.addEventListener('change', function () {
-        Array.prototype.forEach.call(document.querySelectorAll('.pilih'), function (c) {
-          c.checked = semua.checked;
-          if (semua.checked) terpilih[c.dataset.id] = true; else delete terpilih[c.dataset.id];
-        });
-        perbaruiMassal();
+    semua.addEventListener('change', function () {
+      Array.prototype.forEach.call(document.querySelectorAll('.pilih'), function (c) {
+        c.checked = semua.checked;
+        if (semua.checked) terpilih[c.dataset.id] = true; else delete terpilih[c.dataset.id];
       });
-    }
+      perbaruiMassal();
+    });
     Array.prototype.forEach.call(document.querySelectorAll('.pilih'), function (c) {
       c.addEventListener('change', function () {
         if (c.checked) terpilih[c.dataset.id] = true; else delete terpilih[c.dataset.id];
@@ -369,49 +360,95 @@
   }
 
   function perbaruiHalaman() {
-    var mulai = (halaman - 1) * (hasil.per_halaman || 50) + 1;
-    var akhir = Math.min(halaman * (hasil.per_halaman || 50), hasil.total);
-    document.getElementById('info-halaman').textContent = hasil.total
-      ? 'Menampilkan ' + mulai + '–' + akhir + ' dari ' + hasil.total
-      : '';
+    var per = hasil.per_halaman || 50;
+    var mulai = (halaman - 1) * per + 1;
+    var akhir = Math.min(halaman * per, hasil.total);
+    document.getElementById('info-halaman').textContent =
+      hasil.total ? 'Menampilkan ' + mulai + '–' + akhir + ' dari ' + hasil.total : '';
     document.getElementById('tbl-sebelum').disabled = halaman <= 1;
     document.getElementById('tbl-sesudah').disabled = akhir >= hasil.total;
   }
 
+  /** Tombol massal menyesuaikan status baris yang benar-benar terpilih. */
   function perbaruiMassal() {
-    var n = Object.keys(terpilih).length;
-    var el = document.getElementById('massal-jumlah');
-    if (el) el.textContent = n ? n + ' transaksi terpilih' : 'Pilih transaksi untuk memverifikasi';
-    ['tbl-verif', 'tbl-batal-verif', 'tbl-selesai-tinjau'].forEach(function (id) {
-      var b = document.getElementById(id);
-      if (b) b.disabled = !n;
-    });
+    var ids = Object.keys(terpilih);
+    var baris = (hasil && hasil.baris ? hasil.baris : []).filter(function (t) { return terpilih[t.id]; });
+    var ada = function (st) { return baris.some(function (t) { return t.status === st; }); };
+
+    document.getElementById('massal-jumlah').textContent =
+      ids.length ? ids.length + ' transaksi terpilih' : 'Pilih transaksi untuk diproses';
+
+    document.getElementById('tbl-ajukan').disabled = !(ada(ST.DRAFT) || ada(ST.DITOLAK));
+    document.getElementById('tbl-tarik').disabled = !ada(ST.DIAJUKAN);
+
+    var v = document.getElementById('tbl-verif');
+    if (v) {
+      v.disabled = !ada(ST.DIAJUKAN);
+      document.getElementById('tbl-tolak').disabled = !ada(ST.DIAJUKAN);
+      document.getElementById('tbl-batal-verif').disabled = !ada(ST.TERVERIFIKASI);
+    }
   }
 
-  async function ubahVerifikasi(status, selesaiTinjau) {
-    var ids = Object.keys(terpilih);
-    if (!ids.length) return;
+  async function kirimMassal(aksi, data) {
+    if (!data.ids || !data.ids.length) return;
     try {
-      var r = await S.API.panggil('verifikasi', { ids: ids, status: status, selesaiTinjau: selesaiTinjau });
+      var r = await S.API.panggil(aksi, data);
       S.UI.sukses(r.pesan);
       muatDaftar();
     } catch (err) { S.UI.galat(err.message); }
+  }
+
+  function formTolak() {
+    var ids = Object.keys(terpilih);
+    if (!ids.length) return;
+    S.UI.modal('Tolak ' + ids.length + ' transaksi',
+      '<div id="tolak-pesan"></div>' +
+      '<div class="bidang"><label for="x-alasan">Alasan penolakan *</label>' +
+      '<textarea id="x-alasan" placeholder="mis. nominal tidak sesuai bukti, atau jenis penggunaan keliru"></textarea>' +
+      '<div class="petunjuk">Alasan ini ditampilkan kepada operator supaya ia tahu apa yang harus diperbaiki.</div></div>',
+      [
+        { label: 'Batal', aksi: function (t) { t(); } },
+        { label: 'Tolak', kelas: 'tombol-bahaya', aksi: async function (tutup) {
+          var alasan = document.getElementById('x-alasan').value.trim();
+          if (!alasan) {
+            document.getElementById('tolak-pesan').innerHTML =
+              '<div class="pesan pesan-galat">Alasan penolakan wajib diisi.</div>';
+            return;
+          }
+          try {
+            var r = await S.API.panggil('putusanVerifikasi',
+              { ids: ids, status: ST.DITOLAK, catatan: alasan });
+            tutup();
+            S.UI.sukses(r.pesan);
+            muatDaftar();
+          } catch (err) {
+            document.getElementById('tolak-pesan').innerHTML =
+              '<div class="pesan pesan-galat">' + Fmt.aman(err.message) + '</div>';
+          }
+        } }
+      ]);
   }
 
   // ------------------------------------------------------------ form isian
 
   function formTransaksi(t) {
     var isUbah = !!t;
-    var sumber = sumberBoleh();
 
     var html =
       '<div id="form-pesan"></div>' +
+      (isUbah && t.status === ST.TERVERIFIKASI
+        ? '<div class="pesan pesan-ingat">Transaksi ini sudah terverifikasi. Menyimpan perubahan akan ' +
+          'mengembalikan statusnya ke <b>menunggu verifikasi</b>, supaya angka borang tidak berubah ' +
+          'tanpa ditinjau ulang.</div>' : '') +
+      (isUbah && t.status === ST.DITOLAK
+        ? '<div class="pesan pesan-galat"><b>Ditolak:</b> ' + Fmt.aman(t.catatan_verifikasi || '-') +
+          '<br>Menyimpan perbaikan akan mengembalikannya menjadi draft.</div>' : '') +
       '<div class="baris-form">' +
         '<div class="bidang"><label for="x-tanggal">Tanggal *</label>' +
           '<input type="date" id="x-tanggal" value="' + Fmt.aman(t ? t.tanggal : '') + '">' +
           '<div class="petunjuk">Tahun anggaran diambil dari tanggal ini.</div></div>' +
         '<div class="bidang"><label for="x-sumber">Sumber dana *</label><select id="x-sumber">' +
-          sumber.map(function (s) {
+          master.sumber_dana.map(function (s) {
             return '<option value="' + s.kode + '"' + (t && t.sumber_kode === s.kode ? ' selected' : '') + '>' +
               Fmt.aman(s.nama) + '</option>';
           }).join('') + '</select></div>' +
@@ -428,7 +465,8 @@
             return '<option' + (t && t.skema === k ? ' selected' : '') + '>' + k + '</option>';
           }).join('') + '</select></div>' +
         '<div class="bidang"><label for="x-jumlah">Jumlah dana (Rp) *</label>' +
-          '<input id="x-jumlah" inputmode="numeric" value="' + (t ? Number(t.jumlah).toLocaleString('id-ID') : '') + '">' +
+          '<input id="x-jumlah" inputmode="numeric" value="' +
+          (t ? Number(t.jumlah).toLocaleString('id-ID') : '') + '">' +
           '<div class="petunjuk" id="x-jumlah-juta"></div></div>' +
         '<div class="bidang bidang-lebar"><label for="x-uraian">Uraian / judul kegiatan *</label>' +
           '<textarea id="x-uraian">' + Fmt.aman(t ? t.uraian : '') + '</textarea></div>' +
@@ -441,40 +479,37 @@
           : '') +
       '</div>';
 
-    var m = S.UI.modal(isUbah ? 'Ubah transaksi ' + t.id : 'Tambah transaksi', html, [
+    S.UI.modal(isUbah ? 'Ubah transaksi ' + t.id : 'Tambah transaksi', html, [
       { label: 'Batal', aksi: function (tutup) { tutup(); } },
-      {
-        label: 'Simpan', kelas: 'tombol-utama',
-        aksi: async function (tutup, tirai) {
-          var tbl = tirai.querySelector('.modal-kaki button:last-child');
-          tbl.disabled = true;
-          tbl.textContent = 'Menyimpan…';
-          try {
-            var tinjauEl = document.getElementById('x-tinjau');
-            var r = await S.API.panggil('simpanTransaksi', {
-              id: t ? t.id : '',
-              tanggal: document.getElementById('x-tanggal').value,
-              sumber_kode: document.getElementById('x-sumber').value,
-              jenis_dana_id: document.getElementById('x-jenis').value,
-              rincian_id: document.getElementById('x-rincian').value,
-              penggunaan_kode: document.getElementById('x-penggunaan').value,
-              skema: document.getElementById('x-skema').value,
-              jumlah: document.getElementById('x-jumlah').value.replace(/[^0-9]/g, ''),
-              uraian: document.getElementById('x-uraian').value,
-              catatan: document.getElementById('x-catatan').value,
-              perlu_tinjau: tinjauEl ? tinjauEl.checked : false
-            });
-            tutup();
-            S.UI.sukses(r.pesan);
-            muatDaftar();
-          } catch (err) {
-            document.getElementById('form-pesan').innerHTML =
-              '<div class="pesan pesan-galat">' + Fmt.aman(err.message) + '</div>';
-            tbl.disabled = false;
-            tbl.textContent = 'Simpan';
-          }
+      { label: 'Simpan', kelas: 'tombol-utama', aksi: async function (tutup, tirai) {
+        var tbl = tirai.querySelector('.modal-kaki button:last-child');
+        tbl.disabled = true;
+        tbl.textContent = 'Menyimpan…';
+        try {
+          var tinjauEl = document.getElementById('x-tinjau');
+          var r = await S.API.panggil('simpanTransaksi', {
+            id: t ? t.id : '',
+            tanggal: document.getElementById('x-tanggal').value,
+            sumber_kode: document.getElementById('x-sumber').value,
+            jenis_dana_kode: document.getElementById('x-jenis').value,
+            rincian_kode: document.getElementById('x-rincian').value,
+            penggunaan_kode: document.getElementById('x-penggunaan').value,
+            skema: document.getElementById('x-skema').value,
+            jumlah: document.getElementById('x-jumlah').value.replace(/[^0-9]/g, ''),
+            uraian: document.getElementById('x-uraian').value,
+            catatan: document.getElementById('x-catatan').value,
+            perlu_tinjau: tinjauEl ? tinjauEl.checked : false
+          });
+          tutup();
+          S.UI.sukses(r.pesan);
+          muatDaftar();
+        } catch (err) {
+          document.getElementById('form-pesan').innerHTML =
+            '<div class="pesan pesan-galat">' + Fmt.aman(err.message) + '</div>';
+          tbl.disabled = false;
+          tbl.textContent = 'Simpan';
         }
-      }
+      } }
     ]);
 
     // Rantai pilihan: sumber -> jenis dana -> rincian
@@ -486,7 +521,7 @@
       var daftar = master.jenis_dana.filter(function (j) { return j.sumber_kode === selSumber.value; });
       selJenis.innerHTML = daftar.length
         ? daftar.map(function (j) {
-            return '<option value="' + j.id + '"' + (t && t.jenis_dana_id === j.id ? ' selected' : '') + '>' +
+            return '<option value="' + j.kode + '"' + (t && t.jenis_dana_kode === j.kode ? ' selected' : '') + '>' +
               Fmt.aman(j.nama) + '</option>';
           }).join('')
         : '<option value="">(belum ada jenis dana untuk sumber ini)</option>';
@@ -494,7 +529,7 @@
     }
 
     function isiRincian() {
-      var daftar = master.rincian.filter(function (r) { return r.jenis_dana_id === selJenis.value; });
+      var daftar = master.rincian.filter(function (r) { return r.jenis_dana_kode === selJenis.value; });
       if (!daftar.length) {
         selRincian.innerHTML = '<option value="">(tidak ada rincian)</option>';
         selRincian.disabled = true;
@@ -502,7 +537,7 @@
       }
       selRincian.disabled = false;
       selRincian.innerHTML = '<option value="">— tidak dirinci —</option>' + daftar.map(function (r) {
-        return '<option value="' + r.id + '"' + (t && t.rincian_id === r.id ? ' selected' : '') + '>' +
+        return '<option value="' + r.kode + '"' + (t && t.rincian_kode === r.kode ? ' selected' : '') + '>' +
           Fmt.aman(r.nama) + '</option>';
       }).join('');
     }
@@ -511,7 +546,8 @@
     selJenis.addEventListener('change', isiRincian);
     isiJenis();
 
-    // Pemformat ribuan + tampilan dalam juta agar mudah dicocokkan dengan borang.
+    // Pemformat ribuan sekaligus tampilan dalam juta, agar mudah dicocokkan
+    // dengan angka borang.
     var inJumlah = document.getElementById('x-jumlah');
     function perbaruiJuta() {
       var n = Number(inJumlah.value.replace(/[^0-9]/g, '')) || 0;
@@ -530,57 +566,18 @@
     if (!t) document.getElementById('x-tanggal').value = new Date().toISOString().slice(0, 10);
   }
 
-  // ------------------------------------------------------------ ganti sandi
-
-  function formSandi() {
-    var html = '<div id="sandi-pesan"></div>' +
-      '<div class="bidang" style="margin-bottom:14px"><label for="s-lama">Kata sandi lama</label>' +
-        '<input type="password" id="s-lama" autocomplete="current-password"></div>' +
-      '<div class="bidang" style="margin-bottom:14px"><label for="s-baru">Kata sandi baru</label>' +
-        '<input type="password" id="s-baru" autocomplete="new-password">' +
-        '<div class="petunjuk">Minimal 8 karakter.</div></div>' +
-      '<div class="bidang"><label for="s-ulang">Ulangi kata sandi baru</label>' +
-        '<input type="password" id="s-ulang" autocomplete="new-password"></div>';
-
-    S.UI.modal('Ganti kata sandi', html, [
-      { label: 'Batal', aksi: function (tutup) { tutup(); } },
-      {
-        label: 'Simpan', kelas: 'tombol-utama',
-        aksi: async function (tutup) {
-          var baru = document.getElementById('s-baru').value;
-          if (baru !== document.getElementById('s-ulang').value) {
-            document.getElementById('sandi-pesan').innerHTML =
-              '<div class="pesan pesan-galat">Kata sandi baru dan ulangannya tidak sama.</div>';
-            return;
-          }
-          try {
-            var r = await S.API.panggil('gantiSandi', {
-              sandiLama: document.getElementById('s-lama').value, sandiBaru: baru
-            });
-            tutup();
-            S.UI.sukses(r.pesan);
-          } catch (err) {
-            document.getElementById('sandi-pesan').innerHTML =
-              '<div class="pesan pesan-galat">' + Fmt.aman(err.message) + '</div>';
-          }
-        }
-      }
-    ]);
-  }
-
-  // ------------------------------------------------------------------ csv
+  // -------------------------------------------------------------------- csv
 
   async function unduhCsv() {
     try {
-      var semua = await S.API.panggil('listTransaksi', {
-        filter: saringSekarang(), halaman: 1, perHalaman: 500
-      });
-      var baris = [['ID', 'Tanggal', 'Tahun', 'Sumber Dana', 'Jenis Dana', 'Rincian',
-                    'Jenis Penggunaan', 'Skema', 'Uraian', 'Jumlah (Rp)', 'Status', 'Dibuat oleh']];
+      var semua = await S.API.panggil('listTransaksi',
+        { filter: saringSekarang(), halaman: 1, perHalaman: 500 });
+      var baris = [['ID', 'Tanggal', 'Tahun', 'Sumber Dana', 'Jenis Dana', 'Rincian', 'Jenis Penggunaan',
+                    'Skema', 'Uraian', 'Jumlah (Rp)', 'Status', 'Dibuat oleh', 'Diverifikasi oleh']];
       semua.baris.forEach(function (t) {
-        baris.push([t.id, t.tanggal, t.tahun, namaSumber(t.sumber_kode), namaJenisDana(t.jenis_dana_id),
-                    namaRincian(t.rincian_id), namaPenggunaan(t.penggunaan_kode), t.skema, t.uraian,
-                    t.jumlah, t.status, t.dibuat_oleh]);
+        baris.push([t.id, t.tanggal, t.tahun, namaSumber(t.sumber_kode), namaJenisDana(t.jenis_dana_kode),
+                    namaRincian(t.rincian_kode), namaPenggunaan(t.penggunaan_kode), t.skema, t.uraian,
+                    t.jumlah, t.status, t.dibuat_oleh, t.diverifikasi_oleh]);
       });
       S.Ekspor.barisKeCsv(baris, 'transaksi-keuangan');
       if (semua.total > semua.baris.length) {

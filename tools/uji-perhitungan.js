@@ -47,7 +47,7 @@ const master = {
     ['JD07', 'PEM', 'Gaji Dosen dan Tendik'], ['JD08', 'PEM', 'DIPA/DRPM'], ['JD09', 'PEM', 'Hibah lainnya'],
     ['JD10', 'PEM', 'Kerjasama'], ['JD11', 'LAIN', 'Beasiswa Dosen'], ['JD12', 'LAIN', 'Hibah lainnya'],
     ['JD13', 'LAIN', 'Kerjasama']
-  ].map((r, i) => ({ id: r[0], sumber_kode: r[1], nama: r[2], urutan: (i + 1) * 10 })),
+  ].map((r, i) => ({ kode: r[0], sumber_kode: r[1], nama: r[2], urutan: (i + 1) * 10 })),
   rincian: [],
   jenis_penggunaan: [
     ['P1', 1, 'Pendidikan', 'operasional'], ['P2', 2, 'Penelitian', 'operasional'],
