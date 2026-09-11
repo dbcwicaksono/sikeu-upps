@@ -90,7 +90,8 @@ var SEED_PARAMETER = [
   ['jumlah_mahasiswa', '1501', 'Jumlah mahasiswa aktif. Penyebut skor 5.1.2.1'],
   ['sumber_operator',  '*',    'Kode sumber dana yang boleh diinput operator, dipisah koma. Isi * untuk semua'],
   ['pendaftaran_otomatis', 'tidak', 'Bawaannya "tidak": hanya email yang tercantum di M_Pengguna yang boleh masuk. Isi "ya" bila pemilik email berdomain kampus boleh terdaftar sendiri sebagai operator'],
-  ['dashboard_publik', 'tidak', 'Isi "ya" bila dashboard boleh dilihat tanpa login']
+  ['dashboard_publik', 'tidak', 'Isi "ya" bila dashboard boleh dilihat tanpa login'],
+  ['dana_mahasiswa',   '',     'Total dana mahasiswa per tahun dari laporan keuangan universitas, mis. 2023=1.234.567.890; 2024=2.345.678.901. Dipakai menu SIKEU > Rapikan PNBP']
 ];
 
 // ============================================================== penyiapan
@@ -446,12 +447,465 @@ function rampingkanHibah() {
     'aslinya; bila ada yang keliru, lepas penggabungannya di Kelola Master > Jenis Dana.');
 }
 
+// ======================================================= perapian PNBP
+
+/** Satu-satunya uraian untuk angka gelondongan dana mahasiswa. */
+var URAIAN_GELONDONGAN_PNBP = 'Penerimaan Mahasiswa';
+
+/** Baris PNBP yang berupa angka gelondongan, bukan belanja terperinci. */
+var POLA_GELONDONGAN_PNBP = /^$|^ukt$|^penerimaan mahasiswa$|operasional pembelajaran prodi/i;
+
+// Hanya uraian yang DIAWALI remunerasi. Ada proyek kerjasama berjudul "Penyusunan
+// Remunerasi Jasa Pelayanan …" yang bukan pembayaran remunerasi sama sekali.
+var POLA_REMUNERASI = /^\s*(remunerasi|renumerasi)\b/i;
+
+/**
+ * Kegiatan anggaran PNBP/BLU, dinamai seperti pada LAKIN. Yang tertulis di
+ * uraian didahulukan; bila tidak ada, diambil dari sub-kegiatannya.
+ * Urutan penting: "prasarana pendukung pembelajaran" memuat "sarana pendukung
+ * pembelajaran", jadi harus diperiksa lebih dulu.
+ */
+var KEGIATAN_PNBP = [
+  [/prasarana pendukung pembelajaran/i,                        'Prasarana Pendukung Pembelajaran'],
+  [/sarana pendukung perkantoran/i,                            'Sarana Pendukung Perkantoran'],
+  [/sarana pendukung pembelajaran/i,                           'Sarana Pendukung Pembelajaran'],
+  [/dukungan operasional pembelajaran|dukungan layanan pembelajaran \(pnbp/i, 'Dukungan Operasional Pembelajaran'],
+  [/layanan pendidikan/i,                                      'Layanan Pendidikan'],
+  [/pengadaan[^|]*perkantoran/i,                               'Sarana Pendukung Perkantoran']
+];
+
+/** [pola, sub-kegiatan, kegiatan bila uraian tidak menyebutnya]. Pola pertama yang cocok dipakai. */
+var SUB_KEGIATAN_PNBP = [
+  [/proses belajar mengajar/i,        'Proses Belajar Mengajar',                               'Layanan Pendidikan'],
+  [/penerimaan mahasiswa baru/i,      'Penerimaan Mahasiswa Baru',                             'Layanan Pendidikan'],
+  [/wisuda/i,                         'Wisuda dan Yudisium',                                   'Layanan Pendidikan'],
+  [/pengembangan kurikulum/i,         'Pengembangan Kurikulum, Akreditasi, dan Mutu Akademik', 'Layanan Pendidikan'],
+  [/unit kegiatan mahasiswa/i,        'Unit Kegiatan Mahasiswa dan Organisasi Kemahasiswaan',  'Layanan Pendidikan'],
+  [/kegiatan kemahasiswaan/i,         'Kegiatan Kemahasiswaan',                                'Layanan Pendidikan'],
+  [/pembinaan karir/i,                'Pembinaan Karir Mahasiswa',                             'Layanan Pendidikan'],
+  [/kerjasama berbasis pendidikan/i,  'Kerjasama Berbasis Pendidikan',                         'Layanan Pendidikan'],
+  [/honor tenaga pendidik/i,          'Honor Tenaga Pendidik Non PNS',                         'Layanan Pendidikan'],
+  [/honor tenaga k/i,                 'Honor Tenaga Kependidikan Non PNS',                     'Dukungan Operasional Pembelajaran'],
+  [/pemeliharaan sarana/i,            'Pemeliharaan Sarana',                                   'Dukungan Operasional Pembelajaran'],
+  [/pemeliharaan prasarana/i,         'Pemeliharaan Prasarana',                                'Dukungan Operasional Pembelajaran'],
+  [/penguatan manajemen sdm/i,        'Penguatan Manajemen SDM',                               'Dukungan Operasional Pembelajaran'],
+  [/peningkatan kompetensi/i,         'Peningkatan Kompetensi Dosen dan Tendik',               'Dukungan Operasional Pembelajaran'],
+  [/gaji (dan|&) tunjangan/i,         'Gaji dan Tunjangan',                                    'Dukungan Operasional Pembelajaran'],
+  [/penyelenggaraan operasional/i,    'Penyelenggaraan Operasional Perkantoran',               'Dukungan Operasional Pembelajaran'],
+  [/kendaraan/i,                      'Pengadaan Kendaraan',                                   'Sarana Pendukung Perkantoran'],
+  [/meubelair/i,                      'Pengadaan Meubelair',                                   'Sarana Pendukung Pembelajaran'],
+  [/buku pustaka/i,                   'Pengadaan Buku Pustaka',                                'Sarana Pendukung Pembelajaran'],
+  [/alat pendidikan/i,                'Pengadaan Alat Pendidikan',                             'Sarana Pendukung Pembelajaran'],
+  [/pembang/i,                        'Pembangunan Prasarana',                                 'Prasarana Pendukung Pembelajaran'],
+  [/peralatan/i,                      'Pengadaan Peralatan',                                   'Sarana Pendukung Pembelajaran'],
+  [/pengadaan/i,                      'Pengadaan Lainnya',                                     'Sarana Pendukung Pembelajaran'],
+  [/investasi sarpras/i,              'Sarana dan Prasarana',                                  'Dukungan Operasional Pembelajaran'],
+  [/dukungan layanan pembelajaran/i,  'Dukungan Layanan Pembelajaran',                         'Dukungan Operasional Pembelajaran']
+];
+
+function jenisBelanjaPnbp(uraian) {
+  if (/persediaan/i.test(uraian)) return 'Belanja Persediaan';
+  var m = String(uraian).match(/belanja (barang|jasa|perjalanan|pemeliharaan|modal)/i);
+  return m ? 'Belanja ' + m[1].charAt(0).toUpperCase() + m[1].slice(1).toLowerCase() : '';
+}
+
+/**
+ * Uraian baku PNBP: "Kegiatan — Sub-kegiatan (Jenis belanja)".
+ * Angka gelondongan menjadi "Penerimaan Mahasiswa". Mengembalikan '' bila
+ * uraiannya tidak dikenali, supaya tidak ada yang ditebak.
+ */
+function namaBakuPnbp(uraian) {
+  var u = String(uraian || '').trim();
+  if (POLA_GELONDONGAN_PNBP.test(u)) return URAIAN_GELONDONGAN_PNBP;
+  if (u.indexOf(' — ') > 0) return u;
+
+  var kegiatan = '', sub = '', i;
+  for (i = 0; i < KEGIATAN_PNBP.length; i++) {
+    if (KEGIATAN_PNBP[i][0].test(u)) { kegiatan = KEGIATAN_PNBP[i][1]; break; }
+  }
+  for (i = 0; i < SUB_KEGIATAN_PNBP.length; i++) {
+    if (SUB_KEGIATAN_PNBP[i][0].test(u)) {
+      sub = SUB_KEGIATAN_PNBP[i][1];
+      if (!kegiatan) kegiatan = SUB_KEGIATAN_PNBP[i][2];
+      break;
+    }
+  }
+  if (!kegiatan) return '';
+  var belanja = jenisBelanjaPnbp(u);
+  return kegiatan + (sub ? ' — ' + sub : '') + (belanja ? ' (' + belanja + ')' : '');
+}
+
+function rupiahTeks(n) {
+  return String(Math.round(Number(n) || 0)).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+}
+
+/** "2023=1.234.567.890; 2024=2.345.678.901" menjadi { '2023': 1234567890, ... }. */
+function uraiDanaMahasiswa(teks) {
+  var dana = {}, salah = [];
+  String(teks || '').split(/[;\n]+/).forEach(function (bagian) {
+    var b = bagian.trim();
+    if (!b) return;
+    var m = b.match(/^(\d{4})\s*[=:]\s*(?:rp\.?\s*)?([\d.,\s]+)$/i);
+    var n = m ? Number(m[2].trim().replace(/,\d{1,2}$/, '').replace(/\D/g, '')) : 0;
+    if (!m || !(n > 0)) { salah.push(b); return; }
+    dana[m[1]] = n;
+  });
+  return { dana: dana, salah: salah };
+}
+
+function tulisBarisBerurutan(s, nilai, indeks) {
+  for (var a = 0; a < indeks.length; ) {
+    var b = a;
+    while (b + 1 < indeks.length && indeks[b + 1] === indeks[b] + 1) b++;
+    s.getRange(indeks[a] + 1, 1, b - a + 1, nilai[0].length).setValues(nilai.slice(indeks[a], indeks[b] + 1));
+    a = b + 1;
+  }
+}
+
+/**
+ * Rapikan PNBP: total tiap tahun disamakan dengan total dana mahasiswa menurut
+ * laporan keuangan universitas, dan uraiannya diseragamkan.
+ *
+ * Temuan yang melatarinya: PNBP setiap tahun terdiri dari baris belanja
+ * terperinci — jumlahnya sama persis dengan realisasi anggaran fakultas di
+ * LAKIN — ditambah angka gelondongan. Gelondongan itu semestinya SISA: total
+ * dana mahasiswa dikurangi belanja. Bila gelondongannya salah, PNBP melenceng
+ * dari laporan universitas.
+ *
+ * Tiga hal dikerjakan, setelah rencananya ditampilkan dan disetujui:
+ *  A. Gelondongan tiap tahun menjadi satu baris "Penerimaan Mahasiswa" sebesar
+ *     sisa. Yang nominalnya berubah turun ke "diajukan" supaya ditinjau
+ *     verifikator. Gelondongan kedua dan seterusnya dihapus; isinya dicatat
+ *     utuh di Log dan disebut di catatan baris yang tersisa.
+ *  B. Uraian diseragamkan (lihat namaBakuPnbp). Uraian lama pindah ke catatan.
+ *     Nominal dan kategori tidak disentuh, jadi statusnya tetap.
+ *  C. Bila tahun TS belum punya remunerasi, ditambahkan satu baris SEMENTARA
+ *     yang disamakan dengan remunerasi TS-1, "diajukan" dan ditandai perlu
+ *     ditinjau. Hapus begitu data sebenarnya masuk.
+ *
+ * Sumber dana, jenis dana, dan jenis penggunaan tidak pernah diubah.
+ *
+ * Tidak ada angka keuangan di berkas ini karena repositorinya publik. Total
+ * dana mahasiswa ditanyakan sekali lewat kotak isian dan disimpan di parameter
+ * dana_mahasiswa; remunerasi disalin dari baris yang sudah ada di spreadsheet.
+ *
+ * Aman dijalankan berulang: bila semuanya sudah sesuai, tidak ada yang ditulis.
+ */
+function rapikanPnbp() {
+  var JUDUL = 'Rapikan PNBP';
+  var ui = null;
+  try { ui = SpreadsheetApp.getUi(); } catch (err) { /* dijalankan dari editor */ }
+  function lapor(isi) {
+    Logger.log(JUDUL + '\n\n' + isi);
+    if (ui) ui.alert(JUDUL, isi, ui.ButtonSet.OK);
+    return isi;
+  }
+
+  var peta = petaJenisDana();
+  var calon = Object.keys(peta).filter(function (k) {
+    return /^pnbp$/i.test(String(peta[k].nama).trim()) && !peta[k].gabung_ke;
+  });
+  if (calon.length !== 1) {
+    return lapor('Diperlukan tepat satu jenis dana bernama "PNBP" yang tidak digabungkan, tetapi ditemukan ' +
+      calon.length + '. Periksa Kelola Master > Jenis Dana.');
+  }
+  var kodePnbp = calon[0];
+
+  var tahunSah = {}, tahunBerlabel = {};
+  baca('M_Tahun').forEach(function (r) {
+    var th = String(angka(r.tahun));
+    tahunSah[th] = true;
+    if (String(r.label_ts || '').trim()) tahunBerlabel[String(r.label_ts).trim().toUpperCase()] = th;
+  });
+
+  // ---------------------------------------------- total dana mahasiswa
+  var param = cariBaris('M_Parameter', 'kunci', 'dana_mahasiswa');
+  var teksDana = param ? String(param.nilai || '').trim() : '';
+  var danaBaru = false;
+  if (!teksDana) {
+    if (!ui) {
+      return lapor('Parameter dana_mahasiswa masih kosong. Jalankan lewat menu SIKEU agar dapat diisi, ' +
+        'atau isi di Kelola Master > Parameter, mis. 2023=1.234.567.890; 2024=2.345.678.901');
+    }
+    var isian = ui.prompt(JUDUL + ' — total dana mahasiswa',
+      'Salin total "Jumlah Dana" dari laporan dana mahasiswa universitas, satu tahun per bagian, ' +
+      'dipisah titik koma.\n\nContoh: 2023=1.234.567.890; 2024=2.345.678.901\n\n' +
+      'Isian disimpan di parameter dana_mahasiswa. Tahun yang tidak diisi hanya dirapikan uraiannya.',
+      ui.ButtonSet.OK_CANCEL);
+    if (isian.getSelectedButton() !== ui.Button.OK) return 'Dibatalkan.';
+    teksDana = String(isian.getResponseText() || '').trim();
+    if (!teksDana) return lapor('Isian kosong, jadi tidak ada yang dikerjakan.');
+    danaBaru = true;
+  }
+  var urai = uraiDanaMahasiswa(teksDana);
+  Object.keys(urai.dana).forEach(function (th) {
+    if (!tahunSah[th]) { urai.salah.push(th + ' (tahun ini belum ada di M_Tahun)'); delete urai.dana[th]; }
+  });
+  if (urai.salah.length) {
+    return lapor('Isian total dana mahasiswa tidak terbaca: ' + urai.salah.join('; ') +
+      '\n\nTulis seperti: 2023=1.234.567.890; 2024=2.345.678.901' +
+      (danaBaru ? '' : '\nUbah di Kelola Master > Parameter > dana_mahasiswa.'));
+  }
+  var dana = urai.dana;
+
+  // --------------------------------------------------- baca Transaksi
+  var s = sheet('Transaksi');
+  var nilai = s.getDataRange().getValues();
+  var jejak = JSON.stringify(nilai);
+  var kol = {};
+  nilai[0].forEach(function (h, i) { kol[String(h).trim()] = i; });
+  function teks(i, k) { var v = nilai[i][kol[k]]; return String(v === null || v === undefined ? '' : v).trim(); }
+  function status(i) { return teks(i, 'status').toLowerCase(); }
+  function dihitung(i) { return status(i) === STATUS.TERVERIFIKASI || status(i) === STATUS.DIAJUKAN; }
+  function jumlah(i) { return angka(nilai[i][kol.jumlah]); }
+  function urutId(a, b) { return teks(a, 'id').localeCompare(teks(b, 'id')); }
+  function gelondongan(i) { return POLA_GELONDONGAN_PNBP.test(teks(i, 'uraian')); }
+
+  var semua = [];
+  for (var n = 1; n < nilai.length; n++) if (teks(n, 'id')) semua.push(n);
+  var pnbp = semua.filter(function (i) {
+    return ujungGabung(teks(i, 'jenis_dana_kode'), peta) === kodePnbp && jumlah(i) > 0;
+  });
+
+  // ------------------------------------------------- A. rencana nominal
+  var rencanaA = [], hapus = [], masalah = [];
+  Object.keys(dana).sort().forEach(function (th) {
+    var diTahun = pnbp.filter(function (i) { return String(angka(nilai[i][kol.tahun])) === th && dihitung(i); });
+    var gel = diTahun.filter(gelondongan).sort(urutId);
+    var belanja = diTahun.filter(function (i) { return !gelondongan(i); })
+      .reduce(function (x, i) { return x + jumlah(i); }, 0);
+    var sisa = dana[th] - belanja;
+    var jumlahGel = gel.reduce(function (x, i) { return x + jumlah(i); }, 0);
+
+    if (sisa < 0) {
+      masalah.push(th + ': belanja terperinci (Rp ' + rupiahTeks(belanja) + ') sudah melebihi total dana ' +
+        'mahasiswa (Rp ' + rupiahTeks(dana[th]) + '). Tahun ini tidak disentuh; periksa baris belanjanya.');
+      return;
+    }
+    if (gel.length <= 1 && jumlahGel === sisa) return;
+
+    var tetap = sisa > 0 && gel.length ? gel[0] : null;
+    var p = {
+      tahun: th, total: dana[th], belanja: belanja, sisa: sisa, tetap: tetap,
+      buang: sisa > 0 ? gel.slice(1) : gel,
+      turun: tetap !== null && status(tetap) === STATUS.TERVERIFIKASI && jumlah(tetap) !== sisa,
+      semula: gel.length
+        ? gel.map(function (i) { return teks(i, 'id') + ' "' + (teks(i, 'uraian') || '(tanpa uraian)') + '" Rp ' + rupiahTeks(jumlah(i)); }).join(' + ')
+        : '(tidak ada gelondongan)'
+    };
+    p.buang.forEach(function (i) { hapus.push(i); });
+    rencanaA.push(p);
+  });
+
+  // --------------------------------------------------- B. rencana nama
+  var dibuang = {};
+  hapus.forEach(function (i) { dibuang[i] = true; });
+  var rencanaB = [], lepas = [];
+  pnbp.forEach(function (i) {
+    if (dibuang[i]) return;
+    var asal = teks(i, 'uraian'), baku = namaBakuPnbp(asal);
+    if (!baku) lepas.push(i);
+    else if (baku !== asal) rencanaB.push({ i: i, asal: asal, baku: baku });
+  });
+
+  // ------------------------------------------- C. remunerasi sementara
+  var rencanaC = null, ts = tahunBerlabel.TS, ts1 = tahunBerlabel['TS-1'];
+  if (ts && ts1) {
+    var remunerasi = function (th, syarat) {
+      return semua.filter(function (i) {
+        return String(angka(nilai[i][kol.tahun])) === th && POLA_REMUNERASI.test(teks(i, 'uraian')) && syarat(i);
+      }).sort(urutId);
+    };
+    var sudahAda = remunerasi(ts, function (i) { return status(i) !== STATUS.DITOLAK; });
+    var acuan = remunerasi(ts1, dihitung);
+    if (!sudahAda.length && acuan.length) {
+      var kategori = function (i) { return [teks(i, 'sumber_kode'), teks(i, 'jenis_dana_kode'), teks(i, 'penggunaan_kode')].join('|'); };
+      if (acuan.some(function (i) { return kategori(i) !== kategori(acuan[0]); })) {
+        masalah.push('Remunerasi ' + ts1 + ' tercatat pada lebih dari satu kategori, jadi baris sementara ' + ts + ' tidak dibuat.');
+      } else {
+        rencanaC = { acuan: acuan, jumlah: acuan.reduce(function (x, i) { return x + jumlah(i); }, 0) };
+      }
+    }
+  }
+
+  var catatanMasalah = masalah.length ? '\n\nTidak dikerjakan:\n  ' + masalah.join('\n  ') : '';
+  var catatanLepas = lepas.length
+    ? '\n\nUraian yang belum dikenali, dibiarkan apa adanya:\n' + lepas.map(function (i) {
+        return '  ' + teks(i, 'id') + ' (' + teks(i, 'tahun') + '): ' + teks(i, 'uraian').slice(0, 70);
+      }).join('\n')
+    : '';
+
+  if (!rencanaA.length && !rencanaB.length && !rencanaC) {
+    if (danaBaru) simpanDanaMahasiswa(dana);
+    return lapor('Tidak ada yang perlu dirapikan: total PNBP sudah sama dengan total dana mahasiswa ' +
+      'dan uraiannya sudah seragam.' + catatanMasalah + catatanLepas);
+  }
+
+  // ------------------------------------------------------ uraian rencana
+  var bagian = [];
+  if (rencanaA.length) {
+    bagian.push('A. Total PNBP disamakan dengan total dana mahasiswa\n' + rencanaA.map(function (p) {
+      return '  ' + p.tahun + ': dana mahasiswa Rp ' + rupiahTeks(p.total) + ', belanja terperinci Rp ' + rupiahTeks(p.belanja) + '\n' +
+        (p.sisa > 0
+          ? '    → "' + URAIAN_GELONDONGAN_PNBP + '" Rp ' + rupiahTeks(p.sisa) +
+            (p.tetap !== null ? ' pada ' + teks(p.tetap, 'id') + (p.turun ? ', status menjadi diajukan' : '') : ' (baris baru, diajukan)') + '\n'
+          : '') +
+        (p.buang.length ? '    → dihapus: ' + p.buang.map(function (i) { return teks(i, 'id'); }).join(', ') + '\n' : '') +
+        '    semula: ' + p.semula;
+    }).join('\n'));
+  }
+  if (rencanaB.length) {
+    bagian.push('B. ' + rencanaB.length + ' uraian PNBP diseragamkan, misalnya:\n' +
+      rencanaB.slice(0, 5).map(function (p) {
+        return '  ' + teks(p.i, 'id') + ': "' + (p.asal ? p.asal.slice(0, 55) + (p.asal.length > 55 ? '…' : '') : '(tanpa uraian)') +
+          '"\n      → "' + p.baku + '"';
+      }).join('\n') +
+      (rencanaB.length > 5 ? '\n  … dan ' + (rencanaB.length - 5) + ' lainnya.' : '') +
+      '\n  Uraian lama disimpan di kolom catatan. Nominal, kategori, dan status tidak berubah.');
+  }
+  if (rencanaC) {
+    bagian.push('C. Remunerasi ' + ts + ' SEMENTARA: Rp ' + rupiahTeks(rencanaC.jumlah) + ', disamakan dengan ' +
+      rencanaC.acuan.map(function (i) { return teks(i, 'id'); }).join(', ') + ' (' + ts1 + ').\n' +
+      '  Status diajukan dan ditandai perlu ditinjau. Hapus begitu data ' + ts + ' sebenarnya masuk.');
+  }
+  var ringkasan = bagian.join('\n\n') + catatanMasalah + catatanLepas;
+
+  if (ui) {
+    var jawab = ui.alert(JUDUL, ringkasan + '\n\nSumber dana, jenis dana, dan jenis penggunaan tidak diubah. Lanjutkan?',
+      ui.ButtonSet.YES_NO);
+    if (jawab !== ui.Button.YES) return 'Dibatalkan.';
+  }
+
+  // ------------------------------------------------------------ terapkan
+  var kunci = LockService.getScriptLock();
+  kunci.waitLock(30000);
+  try {
+    // Dialog bisa terbuka lama; operator mungkin menyimpan sesuatu di sela itu.
+    if (JSON.stringify(s.getDataRange().getValues()) !== jejak) {
+      return lapor('Data transaksi berubah selama dialog terbuka, jadi tidak ada yang ditulis. Jalankan menu ini sekali lagi.');
+    }
+
+    var waktu = sekarang();
+    var email = '';
+    try { email = String(Session.getEffectiveUser().getEmail() || '').toLowerCase(); } catch (err) {}
+    var pelaku = { email: email, peranAsli: 'pemilik skrip' };
+    var penanda = ' (menu Rapikan PNBP)';
+    var berubah = {};
+    var atur = function (i, k, v) { nilai[i][kol[k]] = v; berubah[i] = true; };
+
+    rencanaB.forEach(function (p) {
+      var cat = teks(p.i, 'catatan');
+      atur(p.i, 'uraian', p.baku);
+      atur(p.i, 'catatan', (p.asal ? 'Uraian asal: ' + p.asal : 'Uraian asal kosong') + (cat ? ' | ' + cat : ''));
+      atur(p.i, 'diubah_pada', waktu);
+    });
+
+    var maks = 0;
+    semua.forEach(function (i) { var m = teks(i, 'id').match(/^T(\d+)$/); if (m) maks = Math.max(maks, parseInt(m[1], 10)); });
+    var tambah = [];
+    var barisBaru = function (isi) {
+      var id = String(++maks);
+      while (id.length < 4) id = '0' + id;
+      isi.id = 'T' + id;
+      var r = nilai[0].map(function () { return ''; });
+      Object.keys(isi).forEach(function (k) { if (kol.hasOwnProperty(k)) r[kol[k]] = isi[k]; });
+      tambah.push(r);
+    };
+
+    var operasional = baca('M_JenisPenggunaan')
+      .filter(function (r) { return String(r.kelompok).trim() === 'operasional'; })
+      .sort(function (a, b) { return angka(a.urutan) - angka(b.urutan); })[0];
+
+    rencanaA.forEach(function (p) {
+      var ket = 'Disesuaikan ' + waktu.slice(0, 10) + ': total dana mahasiswa ' + p.tahun + ' Rp ' + rupiahTeks(p.total) +
+        ' dikurangi belanja terperinci Rp ' + rupiahTeks(p.belanja) + '. Semula ' + p.semula;
+      if (p.tetap !== null) {
+        var i = p.tetap, cat = teks(i, 'catatan');
+        atur(i, 'uraian', URAIAN_GELONDONGAN_PNBP);
+        atur(i, 'jumlah', p.sisa);
+        atur(i, 'catatan', ket + (cat ? ' | ' + cat : ''));
+        atur(i, 'diubah_pada', waktu);
+        if (p.turun) {
+          atur(i, 'status', STATUS.DIAJUKAN);
+          atur(i, 'diajukan_pada', waktu);
+          atur(i, 'diverifikasi_oleh', '');
+          atur(i, 'diverifikasi_pada', '');
+          atur(i, 'catatan_verifikasi', 'Nominal disesuaikan ke total dana mahasiswa' + penanda + ' oleh ' + email + '. Periksa, lalu verifikasi.');
+        }
+        catat(pelaku, 'ubah-nominal', 'Transaksi', teks(i, 'id'), ket + penanda);
+      } else if (p.sisa > 0) {
+        barisBaru({
+          tanggal: p.tahun + '-01-01', tahun: Number(p.tahun), sumber_kode: peta[kodePnbp].sumber_kode,
+          jenis_dana_kode: kodePnbp, penggunaan_kode: operasional ? String(operasional.kode).trim() : '',
+          uraian: URAIAN_GELONDONGAN_PNBP, jumlah: p.sisa, status: STATUS.DIAJUKAN, perlu_tinjau: false,
+          catatan: ket, dibuat_oleh: email || '(menu SIKEU)', dibuat_pada: waktu, diajukan_pada: waktu
+        });
+      }
+    });
+
+    if (rencanaC) {
+      var a0 = rencanaC.acuan[0];
+      barisBaru({
+        tanggal: ts + '-01-01', tahun: Number(ts), sumber_kode: teks(a0, 'sumber_kode'),
+        jenis_dana_kode: teks(a0, 'jenis_dana_kode'), rincian_kode: teks(a0, 'rincian_kode'),
+        penggunaan_kode: teks(a0, 'penggunaan_kode'), uraian: 'Remunerasi ' + ts, jumlah: rencanaC.jumlah,
+        status: STATUS.DIAJUKAN, perlu_tinjau: true,
+        catatan: 'SEMENTARA: disamakan dengan remunerasi ' + ts1 + ' (' +
+          rencanaC.acuan.map(function (i) { return teks(i, 'id'); }).join(', ') + ') sampai data ' + ts +
+          ' masuk. Hapus baris ini begitu data sebenarnya diinput.',
+        dibuat_oleh: email || '(menu SIKEU)', dibuat_pada: waktu, diajukan_pada: waktu
+      });
+    }
+
+    tulisBarisBerurutan(s, nilai, Object.keys(berubah).map(Number).sort(function (a, b) { return a - b; }));
+    if (tambah.length) s.getRange(s.getLastRow() + 1, 1, tambah.length, nilai[0].length).setValues(tambah);
+    tambah.forEach(function (r) {
+      catat(pelaku, 'tambah', 'Transaksi', r[kol.id], r[kol.uraian] + ' Rp ' + rupiahTeks(r[kol.jumlah]) + penanda);
+    });
+
+    // Dihapus paling akhir dan dari bawah, supaya nomor baris lain tidak bergeser.
+    hapus.slice().sort(function (a, b) { return b - a; }).forEach(function (i) {
+      var rekam = {};
+      nilai[0].forEach(function (h, k) {
+        rekam[String(h).trim()] = nilai[i][k] instanceof Date ? normalTanggal(nilai[i][k]) : nilai[i][k];
+      });
+      s.deleteRow(i + 1);
+      catat(pelaku, 'hapus', 'Transaksi', rekam.id,
+        'Digabung ke gelondongan tahun ' + rekam.tahun + penanda + '. Isi baris: ' + JSON.stringify(rekam));
+    });
+
+    if (rencanaB.length) {
+      catat(pelaku, 'ubah-nama', 'Transaksi', rencanaB.map(function (p) { return teks(p.i, 'id'); }).join(','),
+        rencanaB.length + ' uraian PNBP diseragamkan' + penanda + '; uraian asal disimpan di kolom catatan');
+    }
+    if (danaBaru) simpanDanaMahasiswa(dana);
+    hapusCache();
+  } finally {
+    kunci.releaseLock();
+  }
+
+  return lapor('Selesai.\n\n' + ringkasan + '\n\n' +
+    'Baris berstatus "diajukan" belum masuk Tabel 12 & 13 sampai disetujui verifikator: buka Input Data, ' +
+    'saring Status "Menunggu Verifikasi". Semua perubahan tercatat di Log.');
+}
+
+function simpanDanaMahasiswa(dana) {
+  var teks = Object.keys(dana).sort().map(function (th) { return th + '=' + rupiahTeks(dana[th]); }).join('; ');
+  var r = cariBaris('M_Parameter', 'kunci', 'dana_mahasiswa');
+  if (r) sheet('M_Parameter').getRange(r._baris, indeksKolom('M_Parameter').nilai).setValue(teks);
+  else {
+    var seed = SEED_PARAMETER.filter(function (p) { return p[0] === 'dana_mahasiswa'; })[0];
+    tambahBaris('M_Parameter', { kunci: 'dana_mahasiswa', nilai: teks, keterangan: seed ? seed[2] : '' });
+  }
+}
+
 function onOpen() {
   SpreadsheetApp.getUi()
     .createMenu('SIKEU')
     .addItem('Siapkan spreadsheet (jalankan sekali)', 'setupSpreadsheet')
     .addItem('Periksa data', 'periksaData')
     .addItem('Rampingkan kategori hibah', 'rampingkanHibah')
+    .addItem('Rapikan PNBP & remunerasi sementara', 'rapikanPnbp')
     .addSeparator()
     .addItem('Kosongkan cache', 'hapusCache')
     .addToUi();

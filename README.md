@@ -279,6 +279,7 @@ impersonasi tidak dapat menaikkan wewenang.
 |---|---|
 | Tambah jenis dana | Kelola Master → Jenis Dana |
 | Dua kategori ternyata sama | **Gabungkan**, jangan dihapus — reversibel |
+| Total PNBP tak sama dengan laporan dana mahasiswa | Menu **SIKEU → Rapikan PNBP & remunerasi sementara** |
 | Jenis dana tidak dipakai lagi | **Nonaktifkan**, riwayat tetap utuh |
 | Ganti tahun akreditasi | Kelola Master → Tahun, pindahkan label TS / TS-1 / TS-2 |
 | Jumlah dosen atau mahasiswa berubah | Kelola Master → Parameter |
@@ -301,7 +302,7 @@ config.js             apiUrl dan clientId — satu-satunya berkas yang perlu diu
 assets/app.js         Identitas Google, klien API, format, mesin penghitung borang
 assets/style.css      Gaya bersama, termasuk aturan cetak
 apps-script/Kode.gs   API: verifikasi token, peran, CRUD, agregasi, penggabungan
-apps-script/Setup.gs  setupSpreadsheet(), seed master, periksaData(), rampingkanHibah()
+apps-script/Setup.gs  setupSpreadsheet(), seed master, periksaData(), rampingkanHibah(), rapikanPnbp()
 data/transaksi.csv    617 transaksi hasil migrasi (lokal, tidak di repo)
 tools/                Uji regresi perhitungan (lokal, tidak di repo)
 ```

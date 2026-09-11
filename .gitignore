@@ -5,6 +5,9 @@
 # Berkasnya tetap ada di komputer Anda untuk diimpor ke Google Sheet.
 data/transaksi.csv
 tools/acuan.json
+# Dokumen sumber (LAKIN, laporan keuangan) memuat angka anggaran sesungguhnya.
+*.pdf
+*.xlsx
 
 node_modules/
 *.log

@@ -278,6 +278,50 @@ Yang perlu diketahui penerus:
   ikut tampil di bawah Hibah. Belum ada transaksi yang memakainya; tinjau apakah memang
   tempatnya di sana.
 
+### Mengapa PNBP disamakan dengan total dana mahasiswa
+
+Pemeriksaan PNBP menemukan bahwa setiap tahunnya tersusun dari dua lapis:
+
+- **Baris belanja terperinci** — jumlahnya sama persis, sampai ke rupiah, dengan realisasi
+  anggaran fakultas pada LAKIN (Tabel 2.4) untuk 2021, 2022, dan 2023
+- **Angka gelondongan** — "Operasional Pembelajaran Prodi …", "UKT", atau baris tanpa uraian
+
+Gelondongan itu semestinya **sisa**: total dana mahasiswa menurut laporan keuangan universitas
+dikurangi belanja terperinci. Pada 2024 dan 2025 polanya tepat. Pada 2023 gelondongan per prodi
+terlalu besar, sehingga PNBP melampaui laporan universitas dan PDMHS ikut membengkak.
+
+Keputusan pengelola: **yang dipakai adalah total dana mahasiswa, bukan realisasi.** Realisasi
+hanya menjelaskan dari mana selisihnya.
+
+Menu `SIKEU → Rapikan PNBP & remunerasi sementara` (`rapikanPnbp()` di `Setup.gs`):
+
+| | Tindakan | Status sesudahnya |
+|---|---|---|
+| A | Gelondongan tiap tahun menjadi satu baris **Penerimaan Mahasiswa** sebesar sisa. Gelondongan kedua dan seterusnya dihapus; isinya utuh di `Log` | *diajukan* bila nominalnya berubah |
+| B | Uraian diseragamkan menjadi `Kegiatan — Sub-kegiatan (Jenis belanja)` mengikuti nama kegiatan anggaran di LAKIN. Uraian lama pindah ke catatan | tetap |
+| C | Bila tahun TS belum punya remunerasi, satu baris **SEMENTARA** disamakan dengan TS-1 | *diajukan*, perlu ditinjau |
+
+Yang sengaja dirancang begitu:
+
+- **Tidak ada angka keuangan di kode**, karena repositorinya publik. Total dana mahasiswa
+  ditanyakan lewat kotak isian dan disimpan di parameter `dana_mahasiswa`; remunerasi disalin
+  dari baris yang sudah ada di spreadsheet.
+- **Nominal yang berubah turun ke *diajukan*** (prinsip 1). Akibatnya, sampai verifikator
+  menyetujui, borang "hanya terverifikasi" justru *kehilangan* gelondongan 2023. Pakai mode
+  pratinjau untuk melihat hasil akhirnya.
+- **Ganti nama tidak menurunkan status.** Nominal dan kategori tidak berubah, jadi tidak ada
+  angka borang yang perlu ditinjau ulang.
+- **Uraian yang tidak dikenali dibiarkan**, bukan ditebak, dan disebut di laporan menu.
+- **Isi sheet dicek ulang setelah dialog disetujui.** Bila operator menyimpan sesuatu selama
+  dialog terbuka, menu tidak menulis apa pun.
+- **Remunerasi sementara menyimpang dari prinsip 5 secara sadar**, atas keputusan pengelola,
+  dan karena itu ditandai tiga kali: uraiannya, catatan *SEMENTARA*, dan *perlu ditinjau*.
+  Hapus begitu data sebenarnya masuk.
+
+Belum dikerjakan: pemecahan dana mahasiswa per jenis penerimaan (nama baris pada laporan
+universitas belum diketahui), dan BOPTN sarana-prasarana 2025 — dana APBN yang tercantum di
+realisasi LAKIN tetapi belum tercatat di sistem.
+
 ---
 
 ## Bagian IV — Arsitektur
@@ -613,6 +657,7 @@ dan menolak melupakannya.
 | Rantai `gabung_ke` | rantai bertingkat, siklus, gelang sendiri, rantai 60 simpul | 11 |
 | Pencabutan `skema` | tidak dikarang, data lama utuh, angka borang tidak bergeser | 6 |
 | Perampingan hibah | pemetaan kategori, Kerjasama tak tersentuh, transaksi tak berubah satu sel pun, total T12/T13 dan skor tetap, jalan ulang, seed = hasil menu, formulir ubah, konfirmasi, keadaan tepi | 40 |
+| Rapikan PNBP | PNBP = dana mahasiswa, kategori & baris non-PNBP tak tersentuh, isi baris terhapus utuh di Log, nama baku pada kasus rawan, remunerasi tak tertukar dengan proyek berjudul "remunerasi", borang sebelum/sesudah verifikasi, jalan ulang, batal, data berubah selama dialog | 35 |
 
 Suite pertama dijalankan dari repositori:
 
@@ -752,7 +797,7 @@ config.js             apiUrl dan clientId — satu-satunya berkas yang perlu diu
 assets/app.js         Identitas Google, klien API, format, MESIN PERHITUNGAN BORANG
 assets/style.css      Gaya bersama, termasuk aturan cetak
 apps-script/Kode.gs   API: verifikasi token, peran, CRUD, agregasi, penggabungan
-apps-script/Setup.gs  setupSpreadsheet(), seed master, periksaData(), rampingkanHibah()
+apps-script/Setup.gs  setupSpreadsheet(), seed master, periksaData(), rampingkanHibah(), rapikanPnbp()
 apps-script/appsscript.json   Scope dan setelan web app
 README.md             Cara memasang
 DOKUMENTASI.md        Dokumen ini
