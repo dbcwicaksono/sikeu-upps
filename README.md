@@ -85,12 +85,19 @@ langsung dalam bentuk ini.
 ### 2. Siapkan Google Sheet dan Apps Script
 
 1. Buat Google Spreadsheet kosong, misalnya `Basis Data Keuangan UPPS`.
-2. **Ekstensi → Apps Script**. Hapus isi `Code.gs`, lalu buat dua berkas:
+2. **Ekstensi → Apps Script**. Di **Setelan proyek** (ikon roda gigi), centang *Tampilkan
+   file manifes "appsscript.json" di editor*, lalu ganti isinya dengan
+   [apps-script/appsscript.json](apps-script/appsscript.json). Manifes itulah yang membatasi izin
+   Google ke tiga scope; tanpanya Apps Script menebak sendiri dan bisa meminta lebih.
+3. Hapus isi `Code.gs`, lalu buat berkas:
    - `Kode.gs` ← isi [apps-script/Kode.gs](apps-script/Kode.gs)
    - `Setup.gs` ← isi [apps-script/Setup.gs](apps-script/Setup.gs)
-3. Di `Kode.gs`, sesuaikan dua konstanta di bagian atas: `CLIENT_ID` dan `DOMAIN_KAMPUS`.
-4. Jalankan fungsi **`setupSpreadsheet`** satu kali. Seluruh tab, header, master data,
-   dropdown validasi, dan format rupiah dibuat otomatis.
+   - `Cadangan.gs` ← berkas cadangan terakhir dari Drive, **bila membangun ulang** (lihat langkah 5)
+4. Di `Kode.gs`, periksa dua konstanta di bagian atas: `CLIENT_ID` dan `DOMAIN_KAMPUS`.
+   `CLIENT_ID` yang sama juga tertulis di `config.js`; bila salah satu diganti, ganti keduanya.
+5. Jalankan fungsi **`setupSpreadsheet`** satu kali. Seluruh tab, header, master data,
+   dropdown validasi, dan format rupiah dibuat otomatis — atau, bila `Cadangan.gs` ada,
+   seluruh isi SIKEU dipulihkan.
 
 Akun yang menjalankan setup itu otomatis menjadi **admin pertama**. Tidak ada daftar email
 di dalam kode — berkas ini tersimpan di repositori publik, dan menuliskan alamat email
@@ -111,11 +118,19 @@ ditambahkan lewat halaman Kelola Master.
 2. **Settings → Pages → Deploy from a branch → `main` / `(root)`**.
 3. Buka `https://<username>.github.io/<nama-repo>/`.
 
-### 5. Migrasikan data lama
+### 5. Memuat data
 
-Berkas `data/transaksi.csv` ada di komputer Anda dan **sengaja tidak diunggah** ke
-repositori publik karena memuat catatan keuangan sesungguhnya. Isinya 617 transaksi hasil
-migrasi dari `Data Keuangan.xlsx`.
+**Membangun ulang — cara utama.** Data tidak disimpan di repositori. Sumbernya adalah berkas
+`Cadangan-SIKEU-<tanggal>.gs` yang diunduh admin dari **Kelola Master → Cadangan** dan disimpan
+di Google Drive pengelola. Tempel sebagai `Cadangan.gs` pada langkah 2, dan `setupSpreadsheet`
+mengisi setiap sheet persis seperti saat cadangan dibuat: transaksi beserta status verifikasinya,
+master, parameter, pengguna, dan Log. Tidak ada impor CSV dan tidak ada menu koreksi yang perlu
+diulang. Setelahnya cukup deploy (bagian 3), salin URL baru ke `config.js`, lalu push.
+
+**Pemasangan pertama dari Excel lama.** Berkas `data/transaksi.csv` ada di komputer pengelola dan
+**sengaja tidak diunggah** ke repositori publik karena memuat catatan keuangan sesungguhnya.
+Isinya 617 transaksi hasil migrasi dari `Data Keuangan.xlsx`. Setelah diimpor, jalankan menu
+koreksi di Google Sheet (lihat Pemeliharaan), lalu unduh cadangan pertama.
 
 Di Google Sheet: **klik tab `Transaksi` lebih dulu** → **File → Impor → Unggah** → pilih
 berkas itu → **Ganti lembar saat ini**, pemisah **koma**. Lalu jalankan menu
@@ -280,6 +295,8 @@ impersonasi tidak dapat menaikkan wewenang.
 | Tambah jenis dana | Kelola Master → Jenis Dana |
 | Dua kategori ternyata sama | **Gabungkan**, jangan dihapus — reversibel |
 | Total PNBP tak sama dengan laporan dana mahasiswa | Menu **SIKEU → Rapikan PNBP & remunerasi sementara** |
+| Koreksi data dalam jumlah banyak | Buat `Koreksi.gs` (privat) lewat `tools/buat-koreksi.js`, tempel ke editor, lalu **SIKEU → Terapkan berkas koreksi** |
+| Menyimpan keadaan terkini | **Kelola Master → Cadangan**, simpan di Drive — setiap selesai verifikasi besar dan minimal sebulan sekali |
 | Jenis dana tidak dipakai lagi | **Nonaktifkan**, riwayat tetap utuh |
 | Ganti tahun akreditasi | Kelola Master → Tahun, pindahkan label TS / TS-1 / TS-2 |
 | Jumlah dosen atau mahasiswa berubah | Kelola Master → Parameter |
@@ -302,7 +319,10 @@ config.js             apiUrl dan clientId — satu-satunya berkas yang perlu diu
 assets/app.js         Identitas Google, klien API, format, mesin penghitung borang
 assets/style.css      Gaya bersama, termasuk aturan cetak
 apps-script/Kode.gs   API: verifikasi token, peran, CRUD, agregasi, penggabungan
-apps-script/Setup.gs  setupSpreadsheet(), seed master, periksaData(), rampingkanHibah(), rapikanPnbp()
+apps-script/Setup.gs  setupSpreadsheet(), seed master, periksaData(), rampingkanHibah(), rapikanPnbp(),
+                      terapkanKoreksi(), pulihkanCadangan()
 data/transaksi.csv    617 transaksi hasil migrasi (lokal, tidak di repo)
-tools/                Uji regresi perhitungan (lokal, tidak di repo)
+tools/                Uji regresi perhitungan, buat-koreksi.js (lokal, tidak di repo)
+apps-script/Koreksi.gs        Berkas koreksi privat (lokal, tidak di repo)
+Cadangan-SIKEU-<tanggal>.gs   Cadangan lengkap seluruh sheet (Drive pengelola, tidak di repo)
 ```

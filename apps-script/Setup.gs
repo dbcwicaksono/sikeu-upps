@@ -64,8 +64,9 @@ var SEED_RINCIAN = [
   ['RC010', 'JD01', 'Gaji Dosen',                                                   100],
   ['RC011', 'JD01', 'Gaji Tendik',                                                  110],
   ['RC012', 'JD01', 'Uang Makan Kontrak',                                           120],
-  ['RC013', 'JD08', 'Gaji Dosen ASN',                                               130],
-  ['RC014', 'JD08', 'Gaji Tendik ASN',                                              140],
+  // DIPA/DRPM tidak mencakup gaji, jadi rincian gaji ASN berada di bawah Gaji Dosen dan Tendik.
+  ['RC013', 'JD07', 'Gaji Dosen ASN',                                               130],
+  ['RC014', 'JD07', 'Gaji Tendik ASN',                                              140],
   ['RC015', 'JD08', 'Dana Kementerian: Penelitian',                                 150],
   ['RC016', 'JD08', 'Dana Kementerian: Hibah Alat/Gedung',                          160],
   ['RC017', 'JD08', 'Dana Kementerian: Beasiswa Pendidikan',                        170],
@@ -108,6 +109,9 @@ function setupSpreadsheet() {
     s.setFrozenRows(1);
   });
 
+  // Cadangan lebih dulu: sheet yang terisi dari cadangan tidak lagi disentuh isian awal di bawah.
+  var pulih = pulihkanCadangan();
+
   isiJikaKosong('M_Sumber', SEED_SUMBER);
   isiJikaKosong('M_JenisPenggunaan', SEED_PENGGUNAAN);
   isiJikaKosong('M_JenisDana', SEED_JENIS_DANA.map(function (r) { return [r[0], r[1], r[2], r[3], true, r[4]]; }));
@@ -121,7 +125,10 @@ function setupSpreadsheet() {
 
   var pesan =
     'Penyiapan selesai.\n\n' +
-    'Tab yang dibuat: ' + Object.keys(SKEMA).join(', ') + '\n\n' +
+    (pulih
+      ? 'Dipulihkan dari cadangan ' + pulih.dibuat + ':\n  ' + (pulih.diisi.join(', ') || '(tidak ada sheet kosong)') + '\n' +
+        (pulih.dilewati.length ? '  Tidak ditimpa karena sudah berisi: ' + pulih.dilewati.join(', ') + '\n' : '') + '\n'
+      : 'Tab yang dibuat: ' + Object.keys(SKEMA).join(', ') + '\n\n') +
     (kabarAdmin ? kabarAdmin + '\n  (login lewat Google Sign-In, tanpa kata sandi)\n\n' : '') +
     (paramBaru.length
       ? 'Parameter baru ditambahkan: ' + paramBaru.join(', ') + '\n' +
@@ -129,8 +136,8 @@ function setupSpreadsheet() {
     'Langkah berikutnya:\n' +
     '  1. Deploy > New deployment > Web app\n' +
     '     Execute as: Me   |   Who has access: Anyone\n' +
-    '  2. Salin URL /exec ke config.js di repositori GitHub Pages Anda.\n' +
-    '  3. Impor data/transaksi.csv ke tab Transaksi bila ingin memuat data lama.';
+    '  2. Salin URL /exec ke config.js di repositori GitHub Pages Anda.' +
+    (pulih ? '' : '\n  3. Untuk memuat data lama, tempel berkas Cadangan.gs ke proyek ini lalu jalankan fungsi ini lagi.');
 
   Logger.log(pesan);
   try {
@@ -899,6 +906,330 @@ function simpanDanaMahasiswa(dana) {
   }
 }
 
+// ================================================== cadangan & pemulihan
+
+/**
+ * Isi sheet yang masih kosong dari Cadangan.gs, bila berkas itu ada di proyek.
+ *
+ * Cadangan dibuat dari Kelola Master > Cadangan (aksiCadangan di Kode.gs).
+ * Dengan ini membangun ulang SIKEU cukup: Sheet baru, tempel appsscript.json,
+ * Kode.gs, Setup.gs, dan Cadangan.gs, lalu jalankan setupSpreadsheet() —
+ * pengguna, parameter, status verifikasi, sampai Log kembali seperti semula.
+ *
+ * Sheet yang sudah berisi tidak pernah ditimpa. Kolom dicocokkan menurut nama
+ * header, jadi cadangan lama tetap terbaca meski SKEMA kelak bertambah kolom.
+ */
+function pulihkanCadangan() {
+  if (typeof DATA_CADANGAN === 'undefined' || !DATA_CADANGAN || !DATA_CADANGAN.sheet) return null;
+  var hasil = { dibuat: DATA_CADANGAN.dibuat || '', diisi: [], dilewati: [] };
+  Object.keys(SKEMA).forEach(function (nama) {
+    var data = DATA_CADANGAN.sheet[nama];
+    if (!data || data.length < 2) return;
+    var s = SpreadsheetApp.getActive().getSheetByName(nama);
+    if (s.getLastRow() > 1) { hasil.dilewati.push(nama); return; }
+    var header = data[0].map(function (h) { return String(h).trim(); });
+    var baris = data.slice(1).map(function (r) {
+      return SKEMA[nama].map(function (k) { var i = header.indexOf(k); return i < 0 ? '' : r[i]; });
+    });
+    s.getRange(2, 1, baris.length, SKEMA[nama].length).setValues(baris);
+    hasil.diisi.push(nama + ' (' + baris.length + ')');
+  });
+  return hasil;
+}
+
+// ============================================= berkas koreksi (Koreksi.gs)
+
+/** Kolom transaksi yang menentukan angka borang; mengubahnya menuntut verifikasi ulang. */
+var MEDAN_BORANG = ['jumlah', 'tahun', 'sumber_kode', 'jenis_dana_kode', 'penggunaan_kode'];
+
+function sel(v) {
+  if (v === null || v === undefined) return '';
+  return v instanceof Date ? normalTanggal(v) : String(v).trim();
+}
+
+function petaKolom(header) {
+  var k = {};
+  header.forEach(function (h, i) { k[String(h).trim()] = i; });
+  return k;
+}
+
+/** { sumber, nama: [alternatif, ...] } menjadi kode jenis dana di ujung penggabungan, atau ''. */
+function kodeJenisDanaDariNama(acuan, peta) {
+  var nama = [].concat(acuan.nama);
+  for (var i = 0; i < nama.length; i++) {
+    var cocok = Object.keys(peta).filter(function (k) {
+      return peta[k].sumber_kode === acuan.sumber &&
+        String(peta[k].nama).trim().toLowerCase() === String(nama[i]).trim().toLowerCase();
+    });
+    if (cocok.length === 1) return ujungGabung(cocok[0], peta);
+  }
+  return '';
+}
+
+/** Medan "jenis_dana" berupa nama diubah menjadi jenis_dana_kode. */
+function uraikanAcuan(obj, peta) {
+  var hasil = {};
+  Object.keys(obj || {}).forEach(function (k) {
+    if (k === 'jenis_dana') hasil.jenis_dana_kode = kodeJenisDanaDariNama(obj[k], peta);
+    else hasil[k] = obj[k];
+  });
+  return hasil;
+}
+
+function samaNilai(kolom, nilai, harapan, peta) {
+  if (kolom === 'jumlah' || kolom === 'tahun') return angka(nilai) === angka(harapan);
+  // Dibandingkan di ujung penggabungan: kode yang kemudian digabungkan tetap dianggap sama.
+  if (kolom === 'jenis_dana_kode') return ujungGabung(sel(nilai), peta) === ujungGabung(sel(harapan), peta);
+  return sel(nilai) === sel(harapan);
+}
+
+/**
+ * Terapkan berkas koreksi PRIVAT (Koreksi.gs, variabel DATA_KOREKSI).
+ *
+ * Koreksi berupa data, bukan kode, supaya nominal dan nama tidak pernah masuk
+ * repositori publik. Berkasnya dibuat di komputer pengelola (tools/buat-koreksi.js)
+ * lalu ditempel ke editor Apps Script.
+ *
+ * Isi yang dikenali:
+ *  - jenisDanaBaru: [{ sumber_kode, nama, urutan }] — dilewati bila nama itu sudah ada
+ *  - rincian: [{ kode, semula, menjadi }] — memindah rincian antar jenis dana
+ *  - ubah:    [{ id, ket, semula, menjadi }] — mengubah transaksi yang ada
+ *  - tambah:  [{ kunci, ket, data }] — transaksi baru, lewat validasiTransaksi()
+ *  - ditahan: [{ ket }] — hanya dilaporkan, menunggu keputusan manusia
+ * Jenis dana boleh ditulis sebagai nama: jenis_dana: { sumber, nama: [...] }.
+ *
+ * Pengamannya:
+ *  - "semula" harus cocok dengan isi sheet. Bila tidak, baris itu dilewati dan
+ *    dilaporkan sebagai konflik, bukan ditimpa.
+ *  - Bila sheet sudah berisi "menjadi", koreksi dianggap sudah diterapkan.
+ *    Transaksi tambahan ditandai [kunci] di catatan, jadi tidak pernah masuk dua kali.
+ *  - Mengubah kolom yang menentukan angka borang pada data terverifikasi
+ *    menurunkannya ke "diajukan". Transaksi baru selalu "diajukan".
+ *  - Sheet dicek ulang setelah dialog disetujui.
+ */
+function terapkanKoreksi() {
+  var JUDUL = 'Terapkan koreksi';
+  var ui = null;
+  try { ui = SpreadsheetApp.getUi(); } catch (err) { /* dijalankan dari editor */ }
+  function lapor(isi) {
+    Logger.log(JUDUL + '\n\n' + isi);
+    if (ui) ui.alert(JUDUL, isi, ui.ButtonSet.OK);
+    return isi;
+  }
+  if (typeof DATA_KOREKSI === 'undefined' || !DATA_KOREKSI) {
+    return lapor('Berkas koreksi belum ada di proyek ini. Tempel Koreksi.gs ke editor Apps Script sebagai berkas baru, ' +
+      'simpan, lalu jalankan menu ini lagi.');
+  }
+  var K = DATA_KOREKSI, label = K.judul || 'Koreksi';
+
+  var peta = petaJenisDana();
+  var jdBaru = (K.jenisDanaBaru || []).filter(function (j) {
+    return !kodeJenisDanaDariNama({ sumber: j.sumber_kode, nama: j.nama }, peta);
+  });
+  var petaRencana = {};
+  Object.keys(peta).forEach(function (k) { petaRencana[k] = peta[k]; });
+  jdBaru.forEach(function (j) {
+    var kode = '(baru) ' + j.nama;
+    petaRencana[kode] = { kode: kode, sumber_kode: j.sumber_kode, nama: j.nama, aktif: true, gabung_ke: '' };
+  });
+
+  var sT = sheet('Transaksi'), sR = sheet('M_Rincian');
+  var nT = sT.getDataRange().getValues(), nR = sR.getDataRange().getValues();
+  var jejak = function () {
+    return JSON.stringify([sT.getDataRange().getValues(), sR.getDataRange().getValues(), sheet('M_JenisDana').getDataRange().getValues()]);
+  };
+  var jejakAwal = jejak();
+  var kT = petaKolom(nT[0]), kR = petaKolom(nR[0]);
+  var baris = function (nilai, kol, kunci, isi) {
+    for (var i = 1; i < nilai.length; i++) if (sel(nilai[i][kol[kunci]]) === isi) return i;
+    return -1;
+  };
+
+  var konflik = [], sudah = 0;
+  function periksa(nilai, kol, i, e, nama) {
+    var menjadi = uraikanAcuan(e.menjadi, petaRencana);
+    var kolomAsing = Object.keys(menjadi).concat(Object.keys(e.semula || {})).filter(function (k) { return !kol.hasOwnProperty(k); });
+    if (kolomAsing.length) { konflik.push(nama + ': kolom tidak dikenal (' + kolomAsing.join(', ') + ')'); return null; }
+    if (menjadi.hasOwnProperty('jenis_dana_kode') && !menjadi.jenis_dana_kode) { konflik.push(nama + ': jenis dana tujuan tidak ditemukan'); return null; }
+    if (Object.keys(menjadi).every(function (k) { return samaNilai(k, nilai[i][kol[k]], menjadi[k], petaRencana); })) { sudah++; return null; }
+    var beda = Object.keys(e.semula || {}).filter(function (k) { return !samaNilai(k, nilai[i][kol[k]], e.semula[k], petaRencana); });
+    if (beda.length) {
+      konflik.push(nama + ': ' + beda.map(function (k) {
+        return k + ' sekarang "' + sel(nilai[i][kol[k]]) + '", semestinya "' + sel(e.semula[k]) + '"';
+      }).join('; '));
+      return null;
+    }
+    return { i: i, e: e };
+  }
+
+  var rencanaRincian = [], rencanaUbah = [], rencanaTambah = [];
+  (K.rincian || []).forEach(function (e) {
+    var i = baris(nR, kR, 'kode', e.kode);
+    if (i < 0) { konflik.push('Rincian ' + e.kode + ' tidak ditemukan'); return; }
+    var p = periksa(nR, kR, i, e, 'Rincian ' + e.kode);
+    if (p) rencanaRincian.push(p);
+  });
+  (K.ubah || []).forEach(function (e) {
+    var i = baris(nT, kT, 'id', e.id);
+    if (i < 0) { konflik.push(e.id + ' tidak ditemukan'); return; }
+    var p = periksa(nT, kT, i, e, e.id);
+    if (p) rencanaUbah.push(p);
+  });
+
+  var penanda = {};
+  for (var n = 1; n < nT.length; n++) {
+    (sel(nT[n][kT.catatan]).match(/\[[^\]\s]+\]/g) || []).forEach(function (m) { penanda[m] = true; });
+  }
+  var tahunSah = {}, sumberSah = {}, penggunaanSah = {};
+  baca('M_Tahun').forEach(function (r) { tahunSah[angka(r.tahun)] = true; });
+  baca('M_Sumber').forEach(function (r) { sumberSah[String(r.kode).trim()] = true; });
+  baca('M_JenisPenggunaan').forEach(function (r) { penggunaanSah[String(r.kode).trim()] = true; });
+  (K.tambah || []).forEach(function (e) {
+    if (penanda['[' + e.kunci + ']']) { sudah++; return; }
+    var d = uraikanAcuan(e.data, petaRencana), alasan = '';
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(String(d.tanggal || ''))) alasan = 'tanggal tidak sah';
+    else if (!tahunSah[angka(d.tahun)]) alasan = 'tahun ' + d.tahun + ' belum ada di M_Tahun';
+    else if (!sumberSah[d.sumber_kode]) alasan = 'sumber dana ' + d.sumber_kode + ' tidak dikenal';
+    else if (!d.jenis_dana_kode || petaRencana[d.jenis_dana_kode].sumber_kode !== d.sumber_kode) alasan = 'jenis dana tidak ditemukan pada sumber ' + d.sumber_kode;
+    else if (!penggunaanSah[d.penggunaan_kode]) alasan = 'jenis penggunaan ' + d.penggunaan_kode + ' tidak dikenal';
+    else if (!String(d.uraian || '').trim()) alasan = 'uraian kosong';
+    else if (!(angka(d.jumlah) > 0)) alasan = 'jumlah harus lebih dari nol';
+    if (alasan) konflik.push('Tambah ' + e.kunci + ': ' + alasan);
+    else rencanaTambah.push({ e: e, d: d });
+  });
+
+  var ditahan = (K.ditahan || []).map(function (x) { return '  ' + x.ket; });
+  var catatanKonflik = konflik.length ? '\n\nKonflik, dilewati:\n  ' + konflik.join('\n  ') : '';
+  var catatanTahan = ditahan.length ? '\n\nDitahan, menunggu keputusan (tidak diterapkan):\n' + ditahan.join('\n') : '';
+
+  if (!jdBaru.length && !rencanaRincian.length && !rencanaUbah.length && !rencanaTambah.length) {
+    return lapor(label + ': tidak ada yang perlu diterapkan' + (sudah ? ' (' + sudah + ' koreksi sudah diterapkan sebelumnya)' : '') +
+      '.' + catatanKonflik + catatanTahan);
+  }
+
+  var borangBerubah = function (p) {
+    var m = uraikanAcuan(p.e.menjadi, petaRencana);
+    return Object.keys(m).some(function (k) { return MEDAN_BORANG.indexOf(k) >= 0 && !samaNilai(k, nT[p.i][kT[k]], m[k], petaRencana); });
+  };
+  var perKategori = {};
+  rencanaTambah.forEach(function (p) {
+    var jd = petaRencana[p.d.jenis_dana_kode];
+    var k = p.d.sumber_kode + ' › ' + jd.nama + ' › ' + p.d.penggunaan_kode;
+    perKategori[k] = perKategori[k] || { n: 0, jumlah: 0 };
+    perKategori[k].n++; perKategori[k].jumlah += angka(p.d.jumlah);
+  });
+  var bagian = [label];
+  if (jdBaru.length) bagian.push('Jenis dana baru: ' + jdBaru.map(function (j) { return j.sumber_kode + ' › ' + j.nama; }).join(', '));
+  if (rencanaRincian.length) bagian.push('Rincian dipindah: ' + rencanaRincian.map(function (p) { return p.e.kode; }).join(', ') +
+    (rencanaRincian[0].e.ket ? ' — ' + rencanaRincian[0].e.ket : ''));
+  if (rencanaUbah.length) bagian.push('Transaksi diubah: ' + rencanaUbah.length + '\n' + rencanaUbah.map(function (p) {
+    return '  ' + p.e.id + ': ' + (p.e.ket || '') + (borangBerubah(p) && sel(nT[p.i][kT.status]).toLowerCase() === STATUS.TERVERIFIKASI ? ' [menjadi diajukan]' : '');
+  }).join('\n'));
+  if (rencanaTambah.length) bagian.push('Transaksi ditambah: ' + rencanaTambah.length + ', status diajukan, total Rp ' +
+    rupiahTeks(rencanaTambah.reduce(function (x, p) { return x + angka(p.d.jumlah); }, 0)) + '\n' +
+    Object.keys(perKategori).sort().map(function (k) {
+      return '  ' + k + ': ' + perKategori[k].n + ' (Rp ' + rupiahTeks(perKategori[k].jumlah) + ')';
+    }).join('\n'));
+  if (sudah) bagian.push('Sudah diterapkan sebelumnya: ' + sudah);
+  var ringkasan = bagian.join('\n\n') + catatanKonflik + catatanTahan;
+
+  if (ui) {
+    var jawab = ui.alert(JUDUL, ringkasan + '\n\nLanjutkan?', ui.ButtonSet.YES_NO);
+    if (jawab !== ui.Button.YES) return 'Dibatalkan.';
+  }
+
+  var kunci = LockService.getScriptLock();
+  kunci.waitLock(30000);
+  var ditambah = [], gagal = [];
+  try {
+    if (jejak() !== jejakAwal) {
+      return lapor('Data berubah selama dialog terbuka, jadi tidak ada yang ditulis. Jalankan menu ini sekali lagi.');
+    }
+    var waktu = sekarang();
+    var email = '';
+    try { email = String(Session.getEffectiveUser().getEmail() || '').toLowerCase(); } catch (err) {}
+    var pelaku = { email: email, peranAsli: 'pemilik skrip' };
+    var akhiran = ' (' + label + ')';
+
+    jdBaru.forEach(function (j) {
+      var kode = kodeBerikutnya('M_JenisDana', 'kode', 'JD', 2);
+      tambahBaris('M_JenisDana', { kode: kode, sumber_kode: j.sumber_kode, nama: j.nama,
+        urutan: angka(j.urutan) || (baca('M_JenisDana').length + 1) * 10, aktif: true, gabung_ke: '' });
+      catat(pelaku, 'tambah', 'M_JenisDana', kode, j.nama + akhiran);
+    });
+    peta = petaJenisDana();
+
+    rencanaRincian.forEach(function (p) {
+      var m = uraikanAcuan(p.e.menjadi, peta);
+      Object.keys(m).forEach(function (k) { nR[p.i][kR[k]] = m[k]; });
+      sR.getRange(p.i + 1, 1, 1, nR[0].length).setValues([nR[p.i]]);
+      catat(pelaku, 'koreksi', 'M_Rincian', p.e.kode, (p.e.ket || '') + akhiran);
+    });
+
+    var berubah = [];
+    rencanaUbah.forEach(function (p) {
+      var i = p.i, m = uraikanAcuan(p.e.menjadi, peta), borang = false;
+      Object.keys(m).forEach(function (k) {
+        if (samaNilai(k, nT[i][kT[k]], m[k], peta)) return;
+        if (MEDAN_BORANG.indexOf(k) >= 0) borang = true;
+        nT[i][kT[k]] = m[k];
+      });
+      var cat = sel(nT[i][kT.catatan]);
+      nT[i][kT.catatan] = 'Koreksi ' + waktu.slice(0, 10) + ': ' + (p.e.ket || '') + (cat ? ' | ' + cat : '');
+      nT[i][kT.diubah_pada] = waktu;
+      var turun = borang && sel(nT[i][kT.status]).toLowerCase() === STATUS.TERVERIFIKASI;
+      if (turun) {
+        nT[i][kT.status] = STATUS.DIAJUKAN;
+        nT[i][kT.diajukan_pada] = waktu;
+        nT[i][kT.diverifikasi_oleh] = '';
+        nT[i][kT.diverifikasi_pada] = '';
+        nT[i][kT.catatan_verifikasi] = 'Dikoreksi' + akhiran + ' oleh ' + email + '. Periksa, lalu verifikasi.';
+      }
+      berubah.push(i);
+      catat(pelaku, 'koreksi', 'Transaksi', p.e.id, (p.e.ket || '') + (turun ? '; status menjadi diajukan' : '') + akhiran);
+    });
+    tulisBarisBerurutan(sT, nT, berubah.sort(function (a, b) { return a - b; }));
+
+    var maks = 0;
+    for (var r = 1; r < nT.length; r++) {
+      var m2 = sel(nT[r][kT.id]).match(/^T(\d+)$/);
+      if (m2) maks = Math.max(maks, parseInt(m2[1], 10));
+    }
+    var baru = [];
+    rencanaTambah.forEach(function (p) {
+      try {
+        var bersih = validasiTransaksi(uraikanAcuan(p.e.data, peta));
+        var id = String(++maks);
+        while (id.length < 4) id = '0' + id;
+        bersih.id = 'T' + id;
+        bersih.status = STATUS.DIAJUKAN;
+        bersih.dibuat_oleh = email || '(menu SIKEU)';
+        bersih.dibuat_pada = waktu;
+        bersih.diajukan_pada = waktu;
+        bersih.catatan = (bersih.catatan ? bersih.catatan + ' ' : '') + '[' + p.e.kunci + ']';
+        baru.push(nT[0].map(function (h) { var v = bersih[String(h).trim()]; return v === undefined ? '' : v; }));
+        ditambah.push(bersih.id);
+      } catch (err) {
+        maks--;
+        gagal.push(p.e.kunci + ': ' + err.message);
+      }
+    });
+    if (baru.length) {
+      sT.getRange(sT.getLastRow() + 1, 1, baru.length, nT[0].length).setValues(baru);
+      catat(pelaku, 'tambah', 'Transaksi', ditambah[0] + '–' + ditambah[ditambah.length - 1],
+        baru.length + ' transaksi dari berkas koreksi, status diajukan' + akhiran);
+    }
+    hapusCache();
+  } finally {
+    kunci.releaseLock();
+  }
+
+  return lapor('Selesai.\n\n' + ringkasan +
+    (gagal.length ? '\n\nGagal divalidasi, tidak ditambahkan:\n  ' + gagal.join('\n  ') : '') +
+    '\n\nTransaksi berstatus "diajukan" belum masuk Tabel 12 & 13 sampai disetujui verifikator. ' +
+    'Semua perubahan tercatat di Log. Berkas Koreksi.gs boleh dihapus dari proyek setelah ini.');
+}
+
 function onOpen() {
   SpreadsheetApp.getUi()
     .createMenu('SIKEU')
@@ -906,6 +1237,7 @@ function onOpen() {
     .addItem('Periksa data', 'periksaData')
     .addItem('Rampingkan kategori hibah', 'rampingkanHibah')
     .addItem('Rapikan PNBP & remunerasi sementara', 'rapikanPnbp')
+    .addItem('Terapkan berkas koreksi (Koreksi.gs)', 'terapkanKoreksi')
     .addSeparator()
     .addItem('Kosongkan cache', 'hapusCache')
     .addToUi();

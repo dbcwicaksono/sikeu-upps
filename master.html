@@ -34,6 +34,7 @@
       <button data-tab="pengguna">Pengguna</button>
       <button data-tab="tetap">Struktur Tetap</button>
       <button data-tab="log">Riwayat Aktivitas</button>
+      <button data-tab="cadangan">Cadangan</button>
     </div>
 
     <div id="isi-tab"><div class="memuat"><span class="pias"></span>Memuat…</div></div>
@@ -148,7 +149,7 @@ setTimeout(function () {
   function gambar() {
     if (!mp) return;
     ({ jenis: gambarJenis, rincian: gambarRincian, tahun: gambarTahun, parameter: gambarParameter,
-       pengguna: gambarPengguna, tetap: gambarTetap, log: gambarLog }[tabAktif])();
+       pengguna: gambarPengguna, tetap: gambarTetap, log: gambarLog, cadangan: gambarCadangan }[tabAktif])();
   }
 
   function namaSumber(kode) {
@@ -599,6 +600,51 @@ setTimeout(function () {
       'Menampilkan ' + r.baris.length + ' aktivitas terakhir dari total ' + r.total +
       '. Setiap baris mencatat email pelakunya, berguna sebagai jejak audit saat asesmen lapangan.',
       '', h + '</tbody></table>');
+  }
+
+  // -------------------------------------------------------------- cadangan
+
+  function gambarCadangan() {
+    var isi = '<div style="padding:18px 20px;max-width:780px;white-space:normal">' +
+      '<p style="margin:0 0 12px">Cadangan menyimpan <b>seluruh isi spreadsheet</b> — transaksi beserta status ' +
+        'verifikasinya, jenis dana dan rincian, tahun, parameter, pengguna, dan riwayat aktivitas — dalam satu ' +
+        'berkas <code>Cadangan.gs</code>. Dengan berkas itu SIKEU dapat dibangun ulang persis seperti hari ini.</p>' +
+      '<div class="pesan pesan-ingat"><b>Berkas ini berisi data keuangan sesungguhnya.</b> Simpan di Google Drive ' +
+        'pengelola. Jangan dikirim ke grup percakapan dan jangan diunggah ke GitHub.</div>' +
+      '<h3 style="font-size:14px;margin:16px 0 6px">Kapan mengunduh</h3>' +
+      '<p style="margin:0 0 12px">Setelah verifikasi dalam jumlah besar, setelah menjalankan menu koreksi di ' +
+        'Google Sheet, dan setidaknya sebulan sekali.</p>' +
+      '<h3 style="font-size:14px;margin:16px 0 6px">Membangun ulang dari cadangan</h3>' +
+      '<ol class="langkah" style="margin:0 0 16px">' +
+        '<li>Buat Google Sheet baru, lalu <b>Ekstensi → Apps Script</b>.</li>' +
+        '<li>Di <b>Setelan proyek</b>, centang <i>Tampilkan file manifes "appsscript.json"</i>, lalu isi ' +
+          'manifes itu dengan <code>apps-script/appsscript.json</code> dari repositori.</li>' +
+        '<li>Buat berkas <code>Kode.gs</code>, <code>Setup.gs</code>, dan <code>Cadangan.gs</code>; tempel isinya.</li>' +
+        '<li>Jalankan fungsi <code>setupSpreadsheet</code>. Semua sheet terisi kembali.</li>' +
+        '<li><b>Deploy → New deployment → Web app</b>, lalu salin URL <code>/exec</code> ke <code>config.js</code>.</li>' +
+      '</ol>' +
+      '<button class="tombol-utama" id="cd-unduh">Unduh Cadangan.gs</button>' +
+      '<span id="cd-kabar" style="margin-left:12px;color:var(--teks-lemah);font-size:13px"></span>' +
+    '</div>';
+    document.getElementById('isi-tab').innerHTML = kartu('Cadangan',
+      'Satu berkas untuk membangun ulang SIKEU tanpa kehilangan apa pun.', '', isi);
+
+    var tombol = document.getElementById('cd-unduh');
+    tombol.addEventListener('click', async function () {
+      tombol.disabled = true;
+      tombol.textContent = 'Menyiapkan…';
+      try {
+        var r = await S.API.panggil('cadangan', {});
+        S.Ekspor.unduh(new Blob([r.teks], { type: 'text/plain;charset=utf-8' }), r.nama_berkas);
+        document.getElementById('cd-kabar').textContent = 'Terunduh: ' + r.ringkas;
+        S.UI.sukses('Cadangan terunduh. Simpan di Google Drive pengelola.');
+      } catch (err) {
+        S.UI.galat(err.message);
+      } finally {
+        tombol.disabled = false;
+        tombol.textContent = 'Unduh Cadangan.gs';
+      }
+    });
   }
 
   // -------------------------------------------------------------- pembantu

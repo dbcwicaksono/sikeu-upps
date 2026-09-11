@@ -8,6 +8,10 @@ tools/acuan.json
 # Dokumen sumber (LAKIN, laporan keuangan) memuat angka anggaran sesungguhnya.
 *.pdf
 *.xlsx
+# Berkas cadangan dan koreksi berisi seluruh data keuangan dan nama; hanya untuk
+# ditempel ke editor Apps Script, disimpan di Drive pengelola.
+Cadangan*.gs
+Koreksi*.gs
 
 node_modules/
 *.log

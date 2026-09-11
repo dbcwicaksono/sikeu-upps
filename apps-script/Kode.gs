@@ -296,7 +296,8 @@ var IZIN = {
   simpanTahun:       PERAN.ADMIN,
   hapusTahun:        PERAN.ADMIN,
   simpanParameter:   PERAN.ADMIN,
-  listLog:           PERAN.ADMIN
+  listLog:           PERAN.ADMIN,
+  cadangan:          PERAN.ADMIN
 };
 
 /** Aksi yang boleh dipanggil tanpa masuk sama sekali. */
@@ -411,6 +412,7 @@ function jalankan(aksi, d, u) {
     case 'hapusTahun':        return aksiHapusTahun(d, u);
     case 'simpanParameter':   return aksiSimpanParameter(d, u);
     case 'listLog':           return aksiListLog(d);
+    case 'cadangan':          return aksiCadangan(u);
   }
   throw new Error('Aksi tidak dikenal: ' + aksi);
 }
@@ -1272,4 +1274,62 @@ function aksiListLog(d) {
   var data = baca('Log');
   var per = Math.min(500, angka(d.perHalaman) || 100);
   return { baris: data.slice(-per).reverse(), total: data.length };
+}
+
+// ================================================================ cadangan
+
+function nilaiCadangan(v) {
+  if (!(v instanceof Date)) return v;
+  var jam = Utilities.formatDate(v, 'Asia/Jakarta', 'HH:mm:ss');
+  return Utilities.formatDate(v, 'Asia/Jakarta', jam === '00:00:00' ? 'yyyy-MM-dd' : "yyyy-MM-dd'T'HH:mm:ss");
+}
+
+/**
+ * Cadangan seluruh sheet dalam bentuk berkas Cadangan.gs.
+ *
+ * Berkas itu cukup ditempel ke proyek Apps Script milik Sheet baru; setelah
+ * setupSpreadsheet() dijalankan, setiap sheet terisi persis seperti saat
+ * cadangan dibuat (lihat pulihkanCadangan di Setup.gs). Tidak ada impor CSV,
+ * tidak ada menu koreksi yang perlu diulang.
+ *
+ * Satu baris per transaksi, supaya berkasnya tetap ringan dibuka di editor dan
+ * dua cadangan mudah dibandingkan.
+ */
+function aksiCadangan(u) {
+  var isi = {}, ringkas = [];
+  Object.keys(SKEMA).forEach(function (nama) {
+    var s = bk().getSheetByName(nama);
+    isi[nama] = (!s || s.getLastRow() === 0) ? [] : s.getDataRange().getValues().map(function (r) {
+      return r.map(nilaiCadangan);
+    });
+    ringkas.push(nama + ' ' + Math.max(0, isi[nama].length - 1));
+  });
+
+  var dibuat = sekarang();
+  var teks = [
+    '/**',
+    ' * Cadangan SIKEU-UPPS — ' + dibuat + ', oleh ' + u.email,
+    ' * ' + ringkas.join(' · '),
+    ' *',
+    ' * BERISI DATA KEUANGAN SESUNGGUHNYA. Simpan di tempat privat, misalnya Google Drive',
+    ' * pengelola. Jangan pernah diunggah ke repositori publik.',
+    ' *',
+    ' * Membangun ulang: Google Sheet baru > Ekstensi > Apps Script. Tempel appsscript.json,',
+    ' * Kode.gs, Setup.gs, dan berkas ini sebagai Cadangan.gs, lalu jalankan setupSpreadsheet().',
+    ' */',
+    'var DATA_CADANGAN = {',
+    '  dibuat: ' + JSON.stringify(dibuat) + ',',
+    '  oleh: ' + JSON.stringify(u.email) + ',',
+    '  sheet: {',
+    Object.keys(isi).map(function (nama) {
+      return '    ' + JSON.stringify(nama) + ': [' + (isi[nama].length ? '\n' +
+        isi[nama].map(function (r) { return '      ' + JSON.stringify(r); }).join(',\n') + '\n    ' : '') + ']';
+    }).join(',\n'),
+    '  }',
+    '};',
+    ''
+  ].join('\n');
+
+  catat(u, 'cadangan', '', '', ringkas.join(', '));
+  return { nama_berkas: 'Cadangan-SIKEU-' + dibuat.slice(0, 10) + '.gs', teks: teks, ringkas: ringkas.join(' · ') };
 }

@@ -274,9 +274,10 @@ Yang perlu diketahui penerus:
 - **Angka borang:** total Tabel 12 per tahun dan seluruh Tabel 13 identik sebelum dan
   sesudah. Karena susunan baris berubah, pembulatan sisa terbesar *boleh* memindahkan 0,01
   juta antarsumber dana; pada data 617 transaksi tidak ada yang berpindah di jendela TS.
-- Rincian `RC013`–`RC018` milik DIPA/DRPM — termasuk *Gaji Dosen ASN* dan *Gaji Tendik ASN* —
-  ikut tampil di bawah Hibah. Belum ada transaksi yang memakainya; tinjau apakah memang
-  tempatnya di sana.
+- Rincian `RC015`–`RC018` milik DIPA/DRPM ikut tampil di bawah Hibah. *Gaji Dosen ASN* dan
+  *Gaji Tendik ASN* (`RC013`, `RC014`) dipindah ke Gaji Dosen dan Tendik, karena pengelola
+  menegaskan DIPA/DRPM tidak mencakup gaji.
+- *Beasiswa Dosen* sengaja tidak digabung: menurut pengelola, beasiswa berbeda dengan hibah.
 
 ### Mengapa PNBP disamakan dengan total dana mahasiswa
 
@@ -319,8 +320,66 @@ Yang sengaja dirancang begitu:
   Hapus begitu data sebenarnya masuk.
 
 Belum dikerjakan: pemecahan dana mahasiswa per jenis penerimaan (nama baris pada laporan
-universitas belum diketahui), dan BOPTN sarana-prasarana 2025 — dana APBN yang tercantum di
-realisasi LAKIN tetapi belum tercatat di sistem.
+universitas belum diketahui).
+
+### Mengapa koreksi dan cadangan berupa berkas, bukan kode
+
+Repositorinya publik. Koreksi yang menyebut nominal atau nama — memindah "Hibah BA BUN",
+mencatat BOPTN 2025, menambah kegiatan dosen — tidak boleh ditulis sebagai kode. Maka mesin dan
+datanya dipisah:
+
+| Di repositori (publik) | Di komputer / Drive pengelola (privat) |
+|---|---|
+| `terapkanKoreksi()` — mesin umum yang membaca `DATA_KOREKSI` | `Koreksi.gs` — daftar koreksi, dibuat `tools/buat-koreksi.js` |
+| `aksiCadangan` + tab Cadangan — membuat berkas cadangan | `Cadangan-SIKEU-<tanggal>.gs` — seluruh isi sheet |
+| `pulihkanCadangan()` — dipanggil `setupSpreadsheet` | |
+
+Keduanya berbentuk `.gs` karena itulah cara paling sederhana memasukkan data ke Apps Script tanpa
+izin Google Drive — izin yang akan memunculkan layar "unverified app" (Bagian V).
+
+**Pengaman mesin koreksi:**
+
+- Setiap perubahan membawa nilai `semula`. Bila isi sheet sudah berbeda, baris itu dilewati dan
+  dilaporkan sebagai konflik, bukan ditimpa
+- Bila sheet sudah berisi nilai `menjadi`, koreksi dianggap sudah diterapkan. Transaksi tambahan
+  ditandai `[kunci]` di catatan, jadi menjalankan ulang tidak pernah menggandakan apa pun
+- Jenis dana boleh ditulis dengan nama dan dibandingkan di ujung penggabungan, sehingga urutan
+  menjalankan menu hibah, PNBP, dan koreksi tidak berpengaruh
+- Transaksi baru melewati `validasiTransaksi()` yang sama dengan formulir, dan selalu masuk
+  sebagai *diajukan*
+
+**Kegiatan dosen dari formulir.** Sebelum dijadikan transaksi, formulir dicocokkan dengan
+transaksi yang ada, karena sebagian kegiatan ternyata sudah tercatat:
+
+- Judul cocok → dilewati
+- Tepat satu baris tanpa uraian dengan tahun, nominal, dan jenis penggunaan sama → judulnya
+  diisikan ke baris itu, bukan menambah baris baru
+- Beberapa calon baris tanpa uraian, atau calon yang uraiannya berupa nama orang → **ditahan**
+  dan dilaporkan untuk diputuskan manusia
+- Judul, tahun, dan nominal identik di dalam formulir → dicatat sekali dan ditandai perlu
+  ditinjau; biasanya diisi oleh lebih dari satu anggota tim
+
+Tanpa penyaringan ini, kegiatan yang sama terhitung dua kali dan menggelembungkan dana
+penelitian dan PkM per dosen.
+
+**Pembangunan ulang yang konsisten.** Sebelumnya, membangun ulang berarti mengimpor CSV lama
+lalu mengulang setiap menu koreksi — dan pengguna, parameter, serta status verifikasi yang
+ditambahkan sejak itu hilang. Sekarang keadaan terkini selalu ada di cadangan terakhir:
+
+```
+Kelola Master → Cadangan → Cadangan-SIKEU-<tanggal>.gs → Drive pengelola
+                                            │
+Sheet baru → Apps Script → manifes + Kode.gs + Setup.gs + Cadangan.gs
+           → setupSpreadsheet → deploy → URL /exec ke config.js
+```
+
+Sheet yang sudah berisi tidak pernah ditimpa, dan kolom dicocokkan menurut nama header sehingga
+cadangan lama tetap terbaca bila `SKEMA` bertambah kolom. Yang tetap manual hanyalah deploy dan
+menyalin URL `/exec` baru ke `config.js`; URL itu melekat pada proyek Apps Script, jadi pasti
+berubah.
+
+Risikonya: cadangan hanya sebaru unduhan terakhir. Karena itu panduan meminta unduhan setiap
+selesai verifikasi besar dan setidaknya sebulan sekali.
 
 ---
 
@@ -658,6 +717,7 @@ dan menolak melupakannya.
 | Pencabutan `skema` | tidak dikarang, data lama utuh, angka borang tidak bergeser | 6 |
 | Perampingan hibah | pemetaan kategori, Kerjasama tak tersentuh, transaksi tak berubah satu sel pun, total T12/T13 dan skor tetap, jalan ulang, seed = hasil menu, formulir ubah, konfirmasi, keadaan tepi | 40 |
 | Rapikan PNBP | PNBP = dana mahasiswa, kategori & baris non-PNBP tak tersentuh, isi baris terhapus utuh di Log, nama baku pada kasus rawan, remunerasi tak tertukar dengan proyek berjudul "remunerasi", borang sebelum/sesudah verifikasi, jalan ulang, batal, data berubah selama dialog | 35 |
+| Koreksi & cadangan | berkas koreksi sungguhan (tambah, ubah, rincian, jenis dana baru), konflik `semula`, jalan ulang, urutan terhadap menu hibah & PNBP, cadangan → pemulihan identik per sheet dan per angka borang, kolom teracak, sheet berisi tidak ditimpa | 31 |
 
 Suite pertama dijalankan dari repositori:
 
@@ -797,14 +857,17 @@ config.js             apiUrl dan clientId — satu-satunya berkas yang perlu diu
 assets/app.js         Identitas Google, klien API, format, MESIN PERHITUNGAN BORANG
 assets/style.css      Gaya bersama, termasuk aturan cetak
 apps-script/Kode.gs   API: verifikasi token, peran, CRUD, agregasi, penggabungan
-apps-script/Setup.gs  setupSpreadsheet(), seed master, periksaData(), rampingkanHibah(), rapikanPnbp()
+apps-script/Setup.gs  setupSpreadsheet(), seed master, periksaData(), rampingkanHibah(), rapikanPnbp(),
+                      terapkanKoreksi(), pulihkanCadangan()
 apps-script/appsscript.json   Scope dan setelan web app
 README.md             Cara memasang
 DOKUMENTASI.md        Dokumen ini
 
-tidak di repositori, hanya di komputer pengelola:
-data/transaksi.csv    617 transaksi hasil migrasi
-tools/                Uji regresi perhitungan dan angka acuannya
+tidak di repositori, hanya di komputer atau Drive pengelola:
+data/transaksi.csv            617 transaksi hasil migrasi
+tools/                        Uji regresi perhitungan, angka acuannya, dan buat-koreksi.js
+apps-script/Koreksi.gs        Berkas koreksi (nominal dan nama dosen)
+Cadangan-SIKEU-<tanggal>.gs   Cadangan lengkap; sumber untuk membangun ulang
 ```
 
 ### Di mana mengubah apa
