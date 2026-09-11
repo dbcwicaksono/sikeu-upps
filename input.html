@@ -349,7 +349,7 @@ setTimeout(function () {
         '<td>' + Fmt.tanggal(t.tanggal) +
           '<br><small style="color:var(--teks-lemah)">' + t.tahun + '</small></td>' +
         '<td>' + Fmt.aman(namaSumber(t.sumber_kode)) +
-          '<br><small style="color:var(--teks-lemah)">' + Fmt.aman(namaJenisDana(t.jenis_dana_kode)) +
+          '<br><small style="color:var(--teks-lemah)">' + Fmt.aman(t.jenis_dana_nama || namaJenisDana(t.jenis_dana_kode)) +
           '</small>' + digabung + rinc + '</td>' +
         '<td>' + Fmt.aman(namaPenggunaan(t.penggunaan_kode)) +
           (t.skema ? '<br><small style="color:var(--teks-lemah)">' + Fmt.aman(t.skema) + '</small>' : '') + '</td>' +
@@ -725,7 +725,12 @@ setTimeout(function () {
             return '<option value="' + s.kode + '"' + (pre && pre.sumber_kode === s.kode ? ' selected' : '') + '>' +
               Fmt.aman(s.nama) + '</option>';
           }).join('') + '</select></div>' +
-        '<div class="bidang"><label for="x-jenis">Jenis dana *</label><select id="x-jenis"></select></div>' +
+        '<div class="bidang"><label for="x-jenis">Jenis dana *</label><select id="x-jenis"></select>' +
+          (t && t.jenis_dana_dilaporkan
+            ? '<div class="petunjuk">Semula <b>' + Fmt.aman(t.jenis_dana_nama || t.jenis_dana_kode) +
+              '</b>, yang kini digabungkan ke <b>' + Fmt.aman(namaJenisDana(t.jenis_dana_dilaporkan)) +
+              '</b>. Bila disimpan, transaksi ini tercatat langsung sebagai kategori itu.</div>'
+            : '') + '</div>' +
         '<div class="bidang"><label for="x-rincian">Rincian (opsional)</label><select id="x-rincian"></select>' +
           '<div class="petunjuk">Muncul bila jenis dana punya daftar rincian.</div></div>' +
         '<div class="bidang"><label for="x-penggunaan">Jenis penggunaan *</label><select id="x-penggunaan">' +
@@ -804,11 +809,16 @@ setTimeout(function () {
     var selJenis = document.getElementById('x-jenis');
     var selRincian = document.getElementById('x-rincian');
 
+    // Kategori yang sudah digabungkan (mis. DIPA/DRPM ke Hibah) tidak punya
+    // pilihan sendiri lagi. Tanpa ini, pilihan PERTAMA pada sumber itu yang
+    // terpilih, dan kategori transaksinya berpindah diam-diam saat disimpan.
+    var kodeAwal = pre ? (pre.jenis_dana_dilaporkan || pre.jenis_dana_kode) : '';
+
     function isiJenis() {
       var daftar = master.jenis_dana.filter(function (j) { return j.sumber_kode === selSumber.value; });
       selJenis.innerHTML = daftar.length
         ? daftar.map(function (j) {
-            return '<option value="' + j.kode + '"' + (pre && pre.jenis_dana_kode === j.kode ? ' selected' : '') + '>' +
+            return '<option value="' + j.kode + '"' + (kodeAwal === j.kode ? ' selected' : '') + '>' +
               Fmt.aman(j.nama) + '</option>';
           }).join('')
         : '<option value="">(belum ada jenis dana untuk sumber ini)</option>';
@@ -862,7 +872,8 @@ setTimeout(function () {
       var baris = [['ID', 'Tanggal', 'Tahun', 'Sumber Dana', 'Jenis Dana', 'Rincian', 'Jenis Penggunaan',
                     'Skema', 'Uraian', 'Jumlah (Rp)', 'Status', 'Dibuat oleh', 'Diverifikasi oleh']];
       semua.baris.forEach(function (t) {
-        baris.push([t.id, t.tanggal, t.tahun, namaSumber(t.sumber_kode), namaJenisDana(t.jenis_dana_kode),
+        baris.push([t.id, t.tanggal, t.tahun, namaSumber(t.sumber_kode),
+                    t.jenis_dana_nama || namaJenisDana(t.jenis_dana_kode),
                     namaRincian(t.rincian_kode), namaPenggunaan(t.penggunaan_kode), t.skema, t.uraian,
                     t.jumlah, t.status, t.dibuat_oleh, t.diverifikasi_oleh]);
       });

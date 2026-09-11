@@ -231,6 +231,53 @@ tanpa imbalan.
 Kolomnya dipertahankan agar data lama utuh, dan nilai yang sah tetap diterima bila dikirim —
 sehingga keputusan ini dapat dibatalkan tanpa kehilangan apa pun.
 
+### Mengapa kategori hibah dirampingkan
+
+Tabel 12 semula memecah hibah menjadi beberapa baris: *DIPA/DRPM* dan *Hibah lainnya* pada
+Pemerintah, serta *Hibah lainnya* pada Sumber Lain. Pengelola memutuskan hibah cukup menjadi
+**satu kategori per sumber dana**, sedangkan **Kerjasama tetap berdiri sendiri**.
+
+Pembedanya kini sumber dana. Hibah pada Pemerintah dan Hibah pada Sumber Lain tetap dua
+baris terpisah — sumber dana memang menentukan baris borang, dan penggabungan lintas sumber
+ditolak sistem.
+
+| Kategori semula | Transaksi | Kini dilaporkan sebagai |
+|---|---|---|
+| Pemerintah › DIPA/DRPM (`JD08`) | 92 | Pemerintah › Hibah (`JD14`) |
+| Pemerintah › Hibah lainnya (`JD09`) | 40 | Pemerintah › Hibah (`JD14`) |
+| Sumber Lain › Hibah lainnya (`JD12`) | 7 | Sumber Lain › Hibah (`JD15`) |
+
+Caranya penggabungan `gabung_ke` ke kategori **Hibah yang baru**, bukan mengganti nama
+DIPA/DRPM menjadi Hibah. Mengganti nama lebih singkat, tetapi 92 transaksi akan kehilangan
+satu-satunya keterangan bahwa dananya dari DIPA. Dengan penggabungan, setiap transaksi tetap
+menyimpan kode aslinya dan setiap gabungan dapat dilepas satu per satu.
+
+*Beasiswa Dosen* dan *Gaji Dosen dan Tendik* tidak ikut, karena bukan hibah menurut namanya.
+Bila kelak dianggap hibah juga, gabungkan lewat Kelola Master.
+
+Yang perlu diketahui penerus:
+
+- **Spreadsheet lama** dirampingkan lewat menu `SIKEU → Rampingkan kategori hibah`
+  (`rampingkanHibah()` di `Setup.gs`). Ia menampilkan rencananya lebih dulu, menunggu
+  persetujuan, mencatat setiap langkah di `Log`, dan tidak berbuat apa-apa bila dijalankan
+  ulang. **Pemasangan baru** langsung dalam bentuk ini: `SEED_JENIS_DANA` disusun persis sama
+  dengan hasil menu itu, dan kesamaannya diuji.
+- **Menyunting transaksi lama** berkategori DIPA/DRPM menyimpannya sebagai Hibah, karena
+  server menolak kategori yang sudah digabungkan. Angka borang tidak bergeser, tetapi kode
+  asal baris itu berganti. Formulir memberitahukan hal ini sebelum disimpan.
+- **Cacat yang ditemukan sebelum perampingan diterapkan:** formulir ubah transaksi memilih
+  jenis dana *pertama* pada sumber itu untuk transaksi berkategori gabungan, karena
+  kategorinya tidak lagi ada di daftar pilihan. DIPA/DRPM akan diam-diam menjadi *Gaji Dosen
+  dan Tendik* begitu disimpan — dan server menerimanya, karena itu kategori yang sah. Kini
+  formulir memilihkan kategori tujuannya. Cacat yang sama pada formulir rincian di Kelola
+  Master (rincian berpindah ke PNBP) ikut diperbaiki.
+- **Angka borang:** total Tabel 12 per tahun dan seluruh Tabel 13 identik sebelum dan
+  sesudah. Karena susunan baris berubah, pembulatan sisa terbesar *boleh* memindahkan 0,01
+  juta antarsumber dana; pada data 617 transaksi tidak ada yang berpindah di jendela TS.
+- Rincian `RC013`–`RC018` milik DIPA/DRPM — termasuk *Gaji Dosen ASN* dan *Gaji Tendik ASN* —
+  ikut tampil di bawah Hibah. Belum ada transaksi yang memakainya; tinjau apakah memang
+  tempatnya di sana.
+
 ---
 
 ## Bagian IV — Arsitektur
@@ -565,6 +612,7 @@ dan menolak melupakannya.
 | Daftar tertutup | penolakan tak terdaftar, tidak ada pendaftaran diam-diam | 10 |
 | Rantai `gabung_ke` | rantai bertingkat, siklus, gelang sendiri, rantai 60 simpul | 11 |
 | Pencabutan `skema` | tidak dikarang, data lama utuh, angka borang tidak bergeser | 6 |
+| Perampingan hibah | pemetaan kategori, Kerjasama tak tersentuh, transaksi tak berubah satu sel pun, total T12/T13 dan skor tetap, jalan ulang, seed = hasil menu, formulir ubah, konfirmasi, keadaan tepi | 40 |
 
 Suite pertama dijalankan dari repositori:
 
@@ -600,6 +648,7 @@ oleh penerus yang tidak tahu alasannya.
 | Menuliskan alamat email admin di kode | Repositorinya publik; email di sana akan dipanen pengumpul spam. Admin pertama diambil dari akun yang menjalankan setup |
 | Menghapus kolom `skema` | Membuang keterangan 14 baris yang tidak ada di tempat lain, dan tidak dapat dibatalkan |
 | Menimpa kode transaksi saat menggabungkan kategori | Menghapus informasi. Penggabungan dibuat reversibel |
+| Mengganti nama "DIPA/DRPM" menjadi "Hibah" | Lebih singkat, tetapi 92 transaksi kehilangan satu-satunya keterangan bahwa dananya dari DIPA. Digabungkan ke "Hibah" baru sebagai gantinya |
 | Menghapus kategori yang masih dipakai | Merusak riwayat. Ditolak sistem; tersedia nonaktifkan dan gabungkan |
 | Kata sandi | Beban pengelolaan, dan jejaknya hanya sampai ke akun, bukan ke orang |
 | Pivot table untuk agregasi | Tidak dapat menerapkan aturan status dan pembulatan sisa terbesar |
@@ -703,7 +752,7 @@ config.js             apiUrl dan clientId — satu-satunya berkas yang perlu diu
 assets/app.js         Identitas Google, klien API, format, MESIN PERHITUNGAN BORANG
 assets/style.css      Gaya bersama, termasuk aturan cetak
 apps-script/Kode.gs   API: verifikasi token, peran, CRUD, agregasi, penggabungan
-apps-script/Setup.gs  setupSpreadsheet(), seed master, periksaData()
+apps-script/Setup.gs  setupSpreadsheet(), seed master, periksaData(), rampingkanHibah()
 apps-script/appsscript.json   Scope dan setelan web app
 README.md             Cara memasang
 DOKUMENTASI.md        Dokumen ini

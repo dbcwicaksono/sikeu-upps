@@ -675,6 +675,9 @@ function aksiListTransaksi(d, u) {
       return {
         id: t.id, tanggal: normalTanggal(t.tanggal), tahun: angka(t.tahun),
         sumber_kode: t.sumber_kode, jenis_dana_kode: kode,
+        // Nama asal ikut dikirim karena master untuk formulir tidak memuat
+        // kategori yang sudah digabungkan, sehingga halaman tidak mengenalnya.
+        jenis_dana_nama: peta[kode] ? peta[kode].nama : '',
         jenis_dana_dilaporkan: akhir !== kode ? akhir : '',
         rincian_kode: t.rincian_kode || '', penggunaan_kode: t.penggunaan_kode,
         skema: t.skema, uraian: t.uraian, jumlah: angka(t.jumlah),
@@ -718,7 +721,9 @@ function validasiTransaksi(d) {
     throw new Error('Jenis dana "' + jd.nama + '" bukan milik sumber dana yang dipilih.');
   }
   if (jd.gabung_ke) {
-    throw new Error('Jenis dana "' + jd.nama + '" sudah digabungkan ke kategori lain, jadi tidak dapat dipilih.');
+    var ujung = peta[ujungGabung(jd.kode, peta)];
+    throw new Error('Jenis dana "' + jd.nama + '" sudah digabungkan' +
+      (ujung ? ' ke "' + ujung.nama + '". Pilih "' + ujung.nama + '"' : ' ke kategori lain, jadi tidak dapat dipilih') + '.');
   }
   if (!jd.aktif) throw new Error('Jenis dana "' + jd.nama + '" sedang nonaktif.');
 

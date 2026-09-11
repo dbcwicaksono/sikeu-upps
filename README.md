@@ -51,6 +51,18 @@ lain. Sifatnya **non-destruktif dan reversibel**: baris transaksi tetap menyimpa
 aslinya, hanya pelaporannya yang dialihkan, dan penggabungan dapat dilepas kapan saja.
 Rantai bertingkat (A→B→C) ditelusuri sampai ujung, dan siklus ditolak.
 
+### Kategori hibah
+
+Hibah tidak dipecah per pemberinya. Setiap sumber dana punya satu jenis dana **Hibah** —
+*DIPA/DRPM* dan *Hibah lainnya* digabungkan ke sana — sedangkan **Kerjasama** tetap
+berdiri sendiri. Pembedanya sumber dana: Hibah pada *Pemerintah* dan Hibah pada *Sumber
+Lain* tetap dua baris Tabel 12 yang terpisah.
+
+Spreadsheet yang dipasang sebelum perubahan ini: jalankan **SIKEU → Rampingkan kategori
+hibah** satu kali. Menu itu menampilkan dulu kategori yang akan digabung beserta jumlah
+transaksinya, menunggu persetujuan, dan aman dijalankan berulang. Pemasangan baru sudah
+langsung dalam bentuk ini.
+
 ---
 
 ## Pemasangan
@@ -289,7 +301,7 @@ config.js             apiUrl dan clientId — satu-satunya berkas yang perlu diu
 assets/app.js         Identitas Google, klien API, format, mesin penghitung borang
 assets/style.css      Gaya bersama, termasuk aturan cetak
 apps-script/Kode.gs   API: verifikasi token, peran, CRUD, agregasi, penggabungan
-apps-script/Setup.gs  setupSpreadsheet(), seed master, periksaData()
+apps-script/Setup.gs  setupSpreadsheet(), seed master, periksaData(), rampingkanHibah()
 data/transaksi.csv    617 transaksi hasil migrasi (lokal, tidak di repo)
 tools/                Uji regresi perhitungan (lokal, tidak di repo)
 ```

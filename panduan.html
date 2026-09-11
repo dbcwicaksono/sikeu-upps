@@ -273,8 +273,10 @@
                 <tr><td><b>Sumber dana</b></td>
                     <td>Dari mana uangnya. Empat pilihan tetap sesuai borang.</td></tr>
                 <tr><td><b>Jenis dana</b></td>
-                    <td>Rincian sumbernya, mis. DIPA, Kerjasama, Hibah. Pilihannya menyesuaikan
-                        sumber dana yang dipilih.</td></tr>
+                    <td>Rincian sumbernya, mis. Hibah, Kerjasama, Gaji Dosen dan Tendik. Pilihannya
+                        menyesuaikan sumber dana yang dipilih. Hibah tidak dipecah per pemberi —
+                        DIPA, DRPM, dan hibah lain semuanya <b>Hibah</b>; bila perlu, sebut pemberinya
+                        di uraian.</td></tr>
                 <tr><td><b>Rincian</b></td>
                     <td>Opsional. Hanya muncul bila jenis dana punya daftar rincian. Boleh
                         dilewati — tidak mempengaruhi borang.</td></tr>
@@ -422,6 +424,19 @@
 
           <p>Hanya kategori pada sumber dana yang sama yang bisa digabungkan, karena sumber
             dana menentukan baris borangnya.</p>
+
+          <h3>Hibah sengaja satu kategori</h3>
+          <p>Setiap sumber dana hanya punya satu <b>Hibah</b>: <i>DIPA/DRPM</i> dan <i>Hibah
+            lainnya</i> sudah digabungkan ke sana. Yang membedakan hibah pemerintah dari hibah
+            pihak lain adalah <b>sumber dananya</b>, bukan jenis dananya. <b>Kerjasama</b> tetap
+            kategori tersendiri.</p>
+
+          <p>Transaksi lama tetap tercatat sebagai DIPA/DRPM atau Hibah lainnya, dan di daftar
+            transaksi tampil dengan keterangan <i>dilaporkan sebagai Hibah</i>. Bila salah satunya
+            disunting, ia tersimpan langsung sebagai Hibah — angka borangnya tidak berubah.</p>
+
+          <p>Spreadsheet yang dipasang sebelum perubahan ini dirampingkan sekali lewat menu
+            <b>SIKEU → Rampingkan kategori hibah</b> di Google Sheet.</p>
 
           <h3>Rincian</h3>
           <p>Lapis tambahan di bawah jenis dana, sifatnya opsional — misalnya memecah PNBP

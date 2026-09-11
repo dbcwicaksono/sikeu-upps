@@ -232,7 +232,7 @@ setTimeout(function () {
         }).join('') + '</select>' +
         '<div class="petunjuk">Empat sumber ini tetap sesuai borang.</div></div>' +
       '<div class="bidang"><label for="j-nama">Nama jenis dana *</label>' +
-        '<input id="j-nama" value="' + Fmt.aman(j ? j.nama : '') + '" placeholder="mis. Hibah Kompetitif Nasional"></div>' +
+        '<input id="j-nama" value="' + Fmt.aman(j ? j.nama : '') + '" placeholder="mis. Sewa Aula"></div>' +
       '<div class="bidang"><label for="j-urutan">Urutan tampil</label>' +
         '<input id="j-urutan" type="number" value="' + (j ? j.urutan : '') + '"></div>' +
       '<div class="bidang"><label for="j-aktif">Status</label><select id="j-aktif">' +
@@ -332,10 +332,16 @@ setTimeout(function () {
   }
 
   function formRincian(r) {
+    // Rincian milik kategori yang sudah digabungkan dipilihkan tujuannya.
+    // Tanpa ini pilihan pertama (PNBP) yang terpilih, dan rincian itu
+    // berpindah induk diam-diam saat disimpan.
+    var induk = r ? (cariJenis(r.jenis_dana_kode) || {}) : {};
+    var kodeInduk = induk.gabung_akhir || (r ? r.jenis_dana_kode : '');
+
     var html = '<div id="fp"></div><div class="baris-form">' +
       '<div class="bidang bidang-lebar"><label for="r-jenis">Jenis dana *</label><select id="r-jenis">' +
         mp.jenis_dana.filter(function (j) { return !j.gabung_ke; }).map(function (j) {
-          return '<option value="' + j.kode + '"' + (r && r.jenis_dana_kode === j.kode ? ' selected' : '') + '>' +
+          return '<option value="' + j.kode + '"' + (kodeInduk === j.kode ? ' selected' : '') + '>' +
             Fmt.aman(namaSumber(j.sumber_kode)) + ' → ' + Fmt.aman(j.nama) + '</option>';
         }).join('') + '</select></div>' +
       '<div class="bidang bidang-lebar"><label for="r-nama">Nama rincian *</label>' +

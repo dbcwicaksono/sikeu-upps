@@ -28,20 +28,27 @@ var SEED_PENGGUNAAN = [
   ['P7', 7, 'Lain-lain',                    'investasi',   7]
 ];
 
+// Kategori hibah dirampingkan menjadi satu "Hibah" per sumber dana (lihat
+// rampingkanHibah). DIPA/DRPM dan Hibah lainnya tetap ada sebagai kategori
+// yang digabungkan, karena data lama di data/transaksi.csv memakai kodenya.
+// Isian ini sama persis dengan hasil rampingkanHibah() pada spreadsheet lama.
 var SEED_JENIS_DANA = [
-  ['JD01', 'MHS',   'PNBP',                  10],
-  ['JD02', 'MHS',   'Ormawa',                20],
-  ['JD03', 'USAHA', 'Kantin',                30],
-  ['JD04', 'USAHA', 'KEPK',                  40],
-  ['JD05', 'USAHA', 'Pengelolaan Jurnal',    50],
-  ['JD06', 'USAHA', 'Renbis',                60],
-  ['JD07', 'PEM',   'Gaji Dosen dan Tendik', 70],
-  ['JD08', 'PEM',   'DIPA/DRPM',             80],
-  ['JD09', 'PEM',   'Hibah lainnya',         90],
-  ['JD10', 'PEM',   'Kerjasama',            100],
-  ['JD11', 'LAIN',  'Beasiswa Dosen',       110],
-  ['JD12', 'LAIN',  'Hibah lainnya',        120],
-  ['JD13', 'LAIN',  'Kerjasama',            130]
+  // kode   sumber   nama                   urutan  gabung_ke
+  ['JD01', 'MHS',   'PNBP',                  10, ''],
+  ['JD02', 'MHS',   'Ormawa',                20, ''],
+  ['JD03', 'USAHA', 'Kantin',                30, ''],
+  ['JD04', 'USAHA', 'KEPK',                  40, ''],
+  ['JD05', 'USAHA', 'Pengelolaan Jurnal',    50, ''],
+  ['JD06', 'USAHA', 'Renbis',                60, ''],
+  ['JD07', 'PEM',   'Gaji Dosen dan Tendik', 70, ''],
+  ['JD08', 'PEM',   'DIPA/DRPM',             80, 'JD14'],
+  ['JD09', 'PEM',   'Hibah lainnya',         90, 'JD14'],
+  ['JD10', 'PEM',   'Kerjasama',            100, ''],
+  ['JD11', 'LAIN',  'Beasiswa Dosen',       110, ''],
+  ['JD12', 'LAIN',  'Hibah lainnya',        120, 'JD15'],
+  ['JD13', 'LAIN',  'Kerjasama',            130, ''],
+  ['JD14', 'PEM',   'Hibah',                 80, ''],
+  ['JD15', 'LAIN',  'Hibah',                120, '']
 ];
 
 var SEED_RINCIAN = [
@@ -102,7 +109,7 @@ function setupSpreadsheet() {
 
   isiJikaKosong('M_Sumber', SEED_SUMBER);
   isiJikaKosong('M_JenisPenggunaan', SEED_PENGGUNAAN);
-  isiJikaKosong('M_JenisDana', SEED_JENIS_DANA.map(function (r) { return [r[0], r[1], r[2], r[3], true, '']; }));
+  isiJikaKosong('M_JenisDana', SEED_JENIS_DANA.map(function (r) { return [r[0], r[1], r[2], r[3], true, r[4]]; }));
   isiJikaKosong('M_Rincian', SEED_RINCIAN.map(function (r) { return [r[0], r[1], r[2], r[3], true]; }));
   isiJikaKosong('M_Tahun', SEED_TAHUN);
   var paramBaru = lengkapiParameter();
@@ -324,11 +331,127 @@ function periksaData() {
   return lap;
 }
 
+// ================================================== perampingan kategori
+
+/** Nama jenis dana yang tergolong hibah. Kerjasama sengaja tidak termasuk. */
+var POLA_HIBAH = /hibah|dipa|drpm/i;
+
+/**
+ * Satukan kategori hibah — DIPA/DRPM, Hibah lainnya, dan sejenisnya — menjadi
+ * satu jenis dana "Hibah" pada setiap sumber dana. Kerjasama tidak disentuh.
+ *
+ * Pembedanya kini sumber dana: "Hibah" pada Pemerintah dan "Hibah" pada Sumber
+ * Lain tetap dua baris Tabel 12 yang terpisah. Menggabungkan lintas sumber
+ * memang ditolak sistem, karena sumber dana menentukan baris borang.
+ *
+ * Caranya penggabungan gabung_ke, BUKAN mengganti nama. DIPA/DRPM tetap ada di
+ * master dengan namanya, setiap transaksi tetap menyimpan kode aslinya, dan
+ * tiap penggabungan dapat dilepas lewat Kelola Master. Mengganti nama
+ * "DIPA/DRPM" menjadi "Hibah" memang lebih singkat, tetapi menghapus
+ * satu-satunya jejak bahwa transaksi itu berasal dari DIPA.
+ *
+ * Aman dijalankan berulang: kategori yang sudah tergabung dilewati.
+ */
+function rampingkanHibah() {
+  var peta = petaJenisDana();
+  var semua = Object.keys(peta).map(function (k) { return peta[k]; });
+  var pakai = {};
+  baca('Transaksi').forEach(function (t) {
+    var k = String(t.jenis_dana_kode).trim();
+    pakai[k] = (pakai[k] || 0) + 1;
+  });
+
+  var rencana = [], lewati = [];
+  baca('M_Sumber').sort(function (a, b) { return angka(a.urutan) - angka(b.urutan); }).forEach(function (sd) {
+    var kodeSumber = String(sd.kode).trim();
+    var diSini = semua.filter(function (j) { return j.sumber_kode === kodeSumber; });
+    var namaHibah = function (j) { return String(j.nama).trim().toLowerCase() === 'hibah'; };
+
+    var calon = diSini.filter(function (j) { return !j.gabung_ke && !namaHibah(j) && POLA_HIBAH.test(j.nama); });
+    if (!calon.length) return;
+
+    var tujuan = diSini.filter(namaHibah)[0] || null;
+    if (tujuan && tujuan.gabung_ke) {
+      lewati.push(sd.nama + ': jenis dana "' + tujuan.nama + '" (' + tujuan.kode + ') sendiri sudah ' +
+        'digabungkan ke ' + tujuan.gabung_ke + '. Lepas dulu penggabungannya, lalu jalankan lagi.');
+      return;
+    }
+    rencana.push({
+      sumber: kodeSumber, namaSumber: sd.nama, tujuan: tujuan, calon: calon,
+      urutan: Math.min.apply(null, calon.map(function (j) { return j.urutan; }))
+    });
+  });
+
+  var ui = null;
+  try { ui = SpreadsheetApp.getUi(); } catch (err) { /* dijalankan dari editor */ }
+  function lapor(judul, isi) {
+    Logger.log(judul + '\n\n' + isi);
+    if (ui) ui.alert(judul, isi, ui.ButtonSet.OK);
+    return isi;
+  }
+  var catatanLewati = lewati.length ? '\n\nDilewati:\n' + lewati.join('\n') : '';
+
+  if (!rencana.length) {
+    return lapor('Rampingkan kategori hibah',
+      'Tidak ada yang perlu dirampingkan: setiap kategori hibah sudah tergabung ke "Hibah".' + catatanLewati);
+  }
+
+  var uraian = rencana.map(function (p) {
+    return p.namaSumber + ' → "Hibah"' +
+      (p.tujuan ? ' (' + p.tujuan.kode + (p.tujuan.aktif ? '' : ', diaktifkan kembali') + ')' : ' (jenis dana baru)') + '\n' +
+      p.calon.map(function (j) {
+        return '   • ' + j.nama + ' (' + j.kode + ', ' + (pakai[j.kode] || 0) + ' transaksi)';
+      }).join('\n');
+  }).join('\n\n');
+
+  if (ui) {
+    var jawab = ui.alert('Rampingkan kategori hibah',
+      'Kategori berikut akan dilaporkan sebagai satu baris "Hibah" pada Tabel 12, per sumber dana:\n\n' +
+      uraian + catatanLewati + '\n\n' +
+      'Kerjasama tidak disentuh. Data transaksi tidak diubah, dan setiap penggabungan dapat dilepas ' +
+      'lewat Kelola Master. Lanjutkan?', ui.ButtonSet.YES_NO);
+    if (jawab !== ui.Button.YES) return 'Dibatalkan.';
+  }
+
+  var s = sheet('M_JenisDana');
+  var kolom = indeksKolom('M_JenisDana');
+  var pelaku = { email: '', peranAsli: 'pemilik skrip' };
+  try { pelaku.email = String(Session.getEffectiveUser().getEmail() || '').toLowerCase(); } catch (err) {}
+  var sebab = ' (perampingan kategori hibah)';
+
+  rencana.forEach(function (p) {
+    var kode;
+    if (p.tujuan) {
+      kode = p.tujuan.kode;
+      if (!p.tujuan.aktif) {
+        s.getRange(p.tujuan._baris, kolom.aktif).setValue(true);
+        catat(pelaku, 'ubah', 'M_JenisDana', kode, 'diaktifkan kembali' + sebab);
+      }
+    } else {
+      kode = kodeBerikutnya('M_JenisDana', 'kode', 'JD', 2);
+      tambahBaris('M_JenisDana', {
+        kode: kode, sumber_kode: p.sumber, nama: 'Hibah', urutan: p.urutan, aktif: true, gabung_ke: ''
+      });
+      catat(pelaku, 'tambah', 'M_JenisDana', kode, 'Hibah' + sebab);
+    }
+    p.calon.forEach(function (j) {
+      s.getRange(j._baris, kolom.gabung_ke).setValue(kode);
+      catat(pelaku, 'gabung', 'M_JenisDana', j.kode, j.kode + ' -> ' + kode + sebab);
+    });
+  });
+  hapusCache();
+
+  return lapor('Perampingan selesai', uraian + catatanLewati + '\n\n' +
+    'Buka ulang dashboard untuk melihat Tabel 12 yang baru. Transaksi lama tetap menyimpan kode ' +
+    'aslinya; bila ada yang keliru, lepas penggabungannya di Kelola Master > Jenis Dana.');
+}
+
 function onOpen() {
   SpreadsheetApp.getUi()
     .createMenu('SIKEU')
     .addItem('Siapkan spreadsheet (jalankan sekali)', 'setupSpreadsheet')
     .addItem('Periksa data', 'periksaData')
+    .addItem('Rampingkan kategori hibah', 'rampingkanHibah')
     .addSeparator()
     .addItem('Kosongkan cache', 'hapusCache')
     .addToUi();
